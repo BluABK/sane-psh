@@ -1,0 +1,39 @@
+<feed xmlns="http://www.w3.org/2005/Atom" xmlns:yt="http://www.youtube.com/xml/schemas/2015">
+ <link href="https://pubsubhubbub.appspot.com" rel="hub"/>
+ <link href="https://www.youtube.com/xml/feeds/videos.xml?channel_id=UCLozjflf3i84bu_2jLTK2rA" rel="self"/>
+ <title>
+  YouTube video feed
+ </title>
+ <updated>
+  2020-05-01T17:04:17.756725413+00:00
+ </updated>
+ <entry>
+  <id>
+   yt:video:qX0wVo5GE6A
+  </id>
+  <yt:videoId>
+   qX0wVo5GE6A
+  </yt:videoId>
+  <yt:channelId>
+   UCLozjflf3i84bu_2jLTK2rA
+  </yt:channelId>
+  <title>
+   Test video (ignore me)
+  </title>
+  <link href="https://www.youtube.com/watch?v=qX0wVo5GE6A" rel="alternate"/>
+  <author>
+   <name>
+    BluABK~
+   </name>
+   <uri>
+    https://www.youtube.com/channel/UCLozjflf3i84bu_2jLTK2rA
+   </uri>
+  </author>
+  <published>
+   2020-05-01T17:03:45+00:00
+  </published>
+  <updated>
+   2020-05-01T17:04:17.756725413+00:00
+  </updated>
+ </entry>
+</feed>
