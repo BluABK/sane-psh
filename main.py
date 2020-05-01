@@ -62,25 +62,34 @@ def handle_video(xml, callback=None):
 def psh():
     retv = ''
     headers = []
+    indent = 4*' '
+    print("NEW {method} REQUEST: ".format(method=request.method))
+    print("{indent}REQ-PATH: {}".format(request.path, indent=indent))
 
-    print("HEADERS: {}".format(request.headers))
-    print("REQ_path {}".format(request.path))
-    print("ARGS: {}".format(request.args))
-    print("DATA: {}".format(request.data))
-    print("FORM: {}".format(request.form))
-    print("JSON: {}".format(request.json))
-    print("Method: {}".format(request.method))
+    print("{indent}HEADERS: ".format(indent=indent))
+    for key, value in request.headers.items():
+        print("{indent}{key}: {value}".format(key=key, value=value, indent=indent+indent))
+    if len(request.args) > 0:
+        print("{indent}ARGS: {}".format(request.args, indent=indent))
+    if request.data is not None:
+        print("{indent}DATA: \n{indent}{indent}{data}".format(data=request.data, indent=indent))
+    if len(request.form) > 0:
+        print("{indent}FORM: {}".format(request.form, indent=indent))
+    if request.json is not None:
+        print("{indent}JSON: {}".format(request.json, indent=indent))
+
+    print("")
 
     if request.method == 'POST':
-        datetime_stamp = datetime.datetime.utcnow().isoformat().replace(':', '-')
+        datetime_stamp = datetime.datetime.utcnow().isoformat().replace(':', '-').replace('T', '_')
         # xml = BeautifulSoup(request.data, features="xml")  # Doesn't standardise tag casing
         xml = BeautifulSoup(request.data, "lxml")  # Standardises tag casing
 
         # print(xml.feed.prettify())
-        if not os.path.isdir('tests/dumps'):
-            os.mkdir('tests/dumps')
-        with open('dumps/request_at_{}.xml'.format(datetime_stamp), 'w') as f:
-            f.write(xml.feed)
+        if not os.path.isdir('request_cache'):
+            os.mkdir('request_cache')
+        with open('request_cache/post_request_at_{}.xml'.format(datetime_stamp), 'w') as f:
+            f.write(xml.decode('utf-8'))
 
         if xml.feed.find('at'):
             d = handle_deleted_entry(xml)
