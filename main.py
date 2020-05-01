@@ -4,11 +4,13 @@ from bs4 import BeautifulSoup
 import datetime
 import os
 
+from utils import pp_dict
+
 # Set up Flask.
 app = Flask(__name__)
 
 
-def handle_get(req):
+def handle_get(req, callback=None):
     topic = request.args["hub.topic"]
     challenge = request.args["hub.challenge"]
     mode = request.args["hub.mode"]
@@ -28,33 +30,32 @@ def handle_get(req):
     return challenge
 
 
-def handle_deleted_entry(xml):
+def handle_deleted_entry(xml, callback=None):
     pass
 
 
-def handle_video(xml):
-    links = [{'href': lnk.get('href'), 'rel': lnk.get('rel')} for lnk in xml.feed.find_all('link')]
-    title = xml.feed.title.string
-    updated = xml.feed.updated.string
-    entry = {
-        'id': xml.feed.entry.id.string,
-        'video_id': xml.feed.entry.find('yt:videoId').string,
-        'channel_id': xml.feed.entry.find('yt:channelId').string,
-        'title': xml.feed.entry.title.string,
-        'links': [{'href': lnk.get('href'), 'rel': lnk.get('rel')} for lnk in xml.feed.entry.find_all('link')],
-        'channel_title': xml.feed.entry.author.name,
-        'channel_uri': xml.feed.entry.author.uri.string,
-        'published': xml.feed.entry.published.string,
-        'updated': xml.feed.entry.updated.string
+def handle_video(xml, callback=None):
+    result = {
+        "links": [{'href': lnk.get('href'), 'rel': lnk.get('rel')} for lnk in xml.feed.find_all('link')],
+        "title": xml.feed.title.string,
+        "updated": xml.feed.updated.string,
+        "entry": {
+            'id': xml.feed.entry.id.string,
+            'video_id': xml.feed.entry.find('yt:videoid').string,
+            'channel_id': xml.feed.entry.find('yt:channelid').string,
+            'title': xml.feed.entry.title.string,
+            'links': [{'href': lnk.get('href'), 'rel': lnk.get('rel')} for lnk in xml.feed.entry.find_all('link')],
+            'channel_title': xml.feed.entry.author.find('name').string,  # Need find due to name collision with 'name'.
+            'channel_uri': xml.feed.entry.author.uri.string,
+            'published': xml.feed.entry.published.string,
+            'updated': xml.feed.entry.updated.string
+        }
     }
 
-    print("\n")
-    print("Links: {links}".format(links=links))
-    print("Title: {title}".format(title=title))
-    print("Updated: {updated}".format(updated=updated))
-    print("Entry: :")
-    for key, value in entry.items():
-        print("\t{key}: {value}".format(key=key, value=value))
+    if callback is not None:
+        callback(result)
+
+    return result
 
 
 @app.route('/sane-psh/', methods=['GET', 'POST'])
@@ -72,18 +73,23 @@ def psh():
 
     if request.method == 'POST':
         datetime_stamp = datetime.datetime.utcnow().isoformat().replace(':', '-')
-        xml = BeautifulSoup(request.data, features="xml")
+        # xml = BeautifulSoup(request.data, features="xml")  # Doesn't standardise tag casing
+        xml = BeautifulSoup(request.data, "lxml")  # Standardises tag casing
 
         # print(xml.feed.prettify())
-        if not os.path.isdir('dumps'):
-            os.mkdir('dumps')
+        if not os.path.isdir('tests/dumps'):
+            os.mkdir('tests/dumps')
         with open('dumps/request_at_{}.xml'.format(datetime_stamp), 'w') as f:
-            f.write(xml.feed.prettify())
+            f.write(xml.feed)
 
         if xml.feed.find('at'):
-            retv = handle_deleted_entry(xml)
+            d = handle_deleted_entry(xml)
+            if d is not None:
+                pp_dict(d)
         else:
-            retv = handle_video(xml)
+            d = handle_video(xml)
+            if d is not None:
+                pp_dict(d)
 
     if request.method == 'GET':
         retv = handle_get(request)
