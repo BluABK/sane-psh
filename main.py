@@ -31,7 +31,26 @@ def handle_get(req, callback=None):
 
 
 def handle_deleted_entry(xml, callback=None):
-    pass
+    deleted_entry = xml.find('at:deleted-entry')
+    result = {
+        'deleted_entry': {
+            'ref': deleted_entry['ref'],
+            'when': deleted_entry['when'],
+            'link':
+                [{'href': lnk.get('href')} for lnk in deleted_entry.find_all('link')]
+                if len(deleted_entry.find_all('link')) > 1
+                else {'href': deleted_entry.link.get('href')}
+        },
+        'by': {
+            'name': deleted_entry.find('at:by').find('name').string,
+            'uri': deleted_entry.find('at:by').uri.string
+        }
+    }
+
+    if callback is not None:
+        callback(result)
+
+    return result
 
 
 def handle_video(xml, callback=None):
@@ -61,8 +80,7 @@ def handle_video(xml, callback=None):
 @app.route('/sane-psh/', methods=['GET', 'POST'])
 def psh():
     retv = ''
-    headers = []
-    indent = 4*' '
+    indent = 4 * ' '
     print("NEW {method} REQUEST: ".format(method=request.method))
     print("{indent}REQ-PATH: {}".format(request.path, indent=indent))
 
@@ -91,7 +109,7 @@ def psh():
         with open('request_cache/post_request_at_{}.xml'.format(datetime_stamp), 'w') as f:
             f.write(xml.decode('utf-8'))
 
-        if xml.feed.find('at'):
+        if xml.feed.find('at:deleted-entry'):
             d = handle_deleted_entry(xml)
             if d is not None:
                 pp_dict(d)
