@@ -31,7 +31,7 @@ def handle_get(req, callback=None):
 
 
 def handle_deleted_entry(xml, callback=None):
-    deleted_entry = xml.find('at:deleted-entry')
+    deleted_entry = xml.feed.find('at:deleted-entry')
     result = {
         'deleted_entry': {
             'ref': deleted_entry['ref'],
