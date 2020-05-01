@@ -31,7 +31,23 @@ def handle_get(req, callback=None):
 
 
 def handle_deleted_entry(xml, callback=None):
-    pass
+    deleted_entry = xml.find('at:deleted-entry')
+    result = {
+        'deleted_entry': {
+            'ref': deleted_entry['ref'],
+            'when': deleted_entry['when'],
+            'link':
+                [{'href': lnk.get('href')} for lnk in deleted_entry.find_all('link')]
+                if len(deleted_entry.find_all('link')) > 1
+                else {'href': deleted_entry.link.get('href')}
+        },
+        'by': {
+            'name': deleted_entry.find('at:by').find('name').string,
+            'uri': deleted_entry.find('at:by').uri.string
+        }
+    }
+
+    return result
 
 
 def handle_video(xml, callback=None):

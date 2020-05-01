@@ -3,7 +3,7 @@ import unittest
 
 from bs4 import BeautifulSoup
 
-from main import handle_get, handle_video, handle_deleted_entry
+from main import handle_video
 from utils import pp_dict
 
 XML_FILEPATH = 'dumps/published_video.xml'
