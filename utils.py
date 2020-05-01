@@ -18,10 +18,12 @@ def pp_dict(d, indent_lvl=0, indent_str='    ', suffix_last_item=None):
             if type(d[key]) is list and list_item_types_equal(d[key], dict):
                 print("{key}: [".format(key=repr(key)))
                 for item in d[key]:
-                    pp_dict(item, indent_lvl=indent_lvl + 1, suffix_last_item=',')
+                    # Suffix ternary: Only gets set if list has more than one item, to avoid confusing separators.
+                    pp_dict(item, indent_lvl=indent_lvl + 1, suffix_last_item=',' if len(d[key]) > 1 else None)
                 # Indent list close bracket to match indented list items (i.e. thus the +1).
                 print("{indent}]".format(indent=(indent_lvl + 1) * indent_str))
             else:
+                # Add suffix to last item in list if suffix is set.
                 if key == list(d.keys())[-1] and suffix_last_item is not None:
                     print("{indent}{key}: {value}{suffix}".format(indent=indent_lvl * indent_str, key=repr(key),
                                                                   value=repr(d[key]), suffix=suffix_last_item))
