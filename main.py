@@ -11,7 +11,7 @@ app = Flask(__name__)
 @app.route('/sane-psh/', methods=['GET', 'POST'])
 def psh():
     retv = ''
-    headers= []
+    headers = []
 
     print("HEADERS: {}".format(request.headers))
     print("REQ_path {}".format(request.path))
@@ -25,7 +25,7 @@ def psh():
         datetime_stamp = datetime.datetime.utcnow().isoformat().replace(':', '-')
         xml = BeautifulSoup(request.data, features="xml")
 
-        print(xml.feed.prettify())
+        # print(xml.feed.prettify())
         if not os.path.isdir('dumps'):
             os.mkdir('dumps')
         with open('dumps/request_at_{}.xml'.format(datetime_stamp), 'w') as f:
