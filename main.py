@@ -13,6 +13,7 @@ def psh():
     retv = ''
     headers= []
 
+    print("HEADERS: {}".format(request.headers))
     print("REQ_path {}".format(request.path))
     print("ARGS: {}".format(request.args))
     print("DATA: {}".format(request.data))
@@ -21,12 +22,6 @@ def psh():
     print("Method: {}".format(request.method))
 
     if request.method == 'POST':
-        print("HEADERS: {}".format(request.headers))
-        # print("REQ_path {}".format(request.path))
-        # print("ARGS: {}".format(request.args))
-        # print("DATA: {}".format(request.data))
-        # print("FORM: {}".format(request.form))
-        # print("JSON: {}".format(request.json))
         datetime_stamp = datetime.datetime.utcnow().isoformat().replace(':', '-')
         xml = BeautifulSoup(request.data, features="xml")
 
@@ -84,7 +79,5 @@ def psh():
 if __name__ == "__main__":
     listener_bind_host = "127.0.0.1"
     listener_bind_port = 5000
-
-    print("Hello world!")
 
     app.run(host=listener_bind_host, port=listener_bind_port, debug=True)
