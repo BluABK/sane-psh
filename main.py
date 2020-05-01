@@ -11,14 +11,14 @@ app = Flask(__name__)
 
 
 def handle_get(req, callback=None):
-    topic = request.args["hub.topic"]
-    challenge = request.args["hub.challenge"]
-    mode = request.args["hub.mode"]
-    if 'hub.lease_seconds' in request.args:
-        lease_seconds = request.args["hub.lease_seconds"]
+    topic = req.args["hub.topic"]
+    challenge = req.args["hub.challenge"]
+    mode = req.args["hub.mode"]
+    if 'hub.lease_seconds' in req.args:
+        lease_seconds = req.args["hub.lease_seconds"]
     else:
         lease_seconds = ""
-    if 'hub.verify_token' in request.args:
+    if 'hub.verify_token' in req.args:
         verify_token = request.args['hub.verify_token']
         # retv = verify_token
 
