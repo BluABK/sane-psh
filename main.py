@@ -44,7 +44,7 @@ def handle_get(req, callback=None):
 
     # Add to database if not exist, else update existing.
     if not row_exists(Channel, channel_id=channel_id):
-        add_row(Channel(channel_id=channel_id, subscribed=(mode == "subscribe"),
+        add_row(Channel(channel_id=channel_id, subscribed=bool(mode == "subscribe"),
                         verify_token=verify_token, hmac_secret=hmac_secret))
     else:
         update_channel(channel_id, subscribed=(mode == "subscribe"),
@@ -73,7 +73,6 @@ def handle_deleted_entry(xml, callback=None):
     video_id = deleted_entry['ref'].split(':')[-1]
 
     if row_exists(Video, video_id=video_id):
-        # FIXME: Video doesn't get deleted from DB.
         # Delete video from DB as it was deleted on YouTube's end.
         del_row_by_filter(Video, video_id=video_id)
 
@@ -92,7 +91,7 @@ def handle_video(xml, callback=None):
             'id': xml.feed.entry.id.string,
             'video_id': xml.feed.entry.find('yt:videoid').string,
             'channel_id': xml.feed.entry.find('yt:channelid').string,
-            'title': xml.feed.entry.title.string,
+            'video_title': xml.feed.entry.title.string,
             'links': [{'href': lnk.get('href'), 'rel': lnk.get('rel')} for lnk in xml.feed.entry.find_all('link')],
             'channel_title': xml.feed.entry.author.find('name').string,  # Need find due to name collision with 'name'.
             'channel_uri': xml.feed.entry.author.uri.string,
@@ -108,7 +107,7 @@ def handle_video(xml, callback=None):
         add_row(
             Video(video_id=entry["video_id"],
                   channel_id=entry["channel_id"],
-                  video_title=entry["title"],
+                  video_title=entry["video_title"],
                   published_on=datetime.strptime(entry["published"], FEED_PUBLISHED_FMT),
                   updated_on=datetime.strptime(datetime_ns_to_ms(entry["updated"]), FEED_UPDATED_FMT)
                   )

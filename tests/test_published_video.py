@@ -37,7 +37,7 @@ class TestPublishedVideo(unittest.TestCase):
                 'id': 'yt:video:qX0wVo5GE6A',
                 'video_id': 'qX0wVo5GE6A',
                 'channel_id': 'UCLozjflf3i84bu_2jLTK2rA',
-                'title': 'Test video (ignore me)',
+                'video_title': 'Test video (ignore me)',
                 'links': [{'href': 'https://www.youtube.com/watch?v=qX0wVo5GE6A', 'rel': ['alternate']}],
                 'channel_title': 'BluABK~',
                 'channel_uri': 'https://www.youtube.com/channel/UCLozjflf3i84bu_2jLTK2rA',
