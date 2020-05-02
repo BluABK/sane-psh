@@ -1,9 +1,10 @@
 from sqlalchemy import create_engine
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker, scoped_session
+from globals import DATABASE_PATH
 
 # Create a database engine.
-engine = create_engine('sqlite:///sane-psh.db')
+engine = create_engine('sqlite:////{}'.format(DATABASE_PATH))
 
 # Create a configured "Session" class.
 db_session = scoped_session(sessionmaker(autocommit=False, autoflush=False, bind=engine))
