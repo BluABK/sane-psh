@@ -1,5 +1,3 @@
-
-
 def list_item_types_equal(li: list, t: type):
     for item in li:
         if type(item) is not t:
@@ -30,3 +28,17 @@ def pp_dict(d, indent_lvl=0, indent_str='    ', suffix_last_item=None):
                 else:
                     print("{indent}{key}: {value}".format(indent=indent_lvl * indent_str, key=repr(key),
                                                           value=repr(d[key])))
+
+
+def datetime_ns_to_ms(dt):
+    """
+    Converts a datetime with nanoseconds to a datetime with milliseconds.
+
+    :param dt:
+    :return:
+    """
+    lhs, rhs = dt.split('.')
+    offset = rhs[9:]
+    ms = rhs[:6]
+
+    return ".".join([lhs, ms + offset])
