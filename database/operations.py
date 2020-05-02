@@ -37,6 +37,40 @@ def add_row(db_row):
         session.close()
 
 
+def get_channel(channel_id) -> dict:
+    session = db_session()
+
+    try:
+        # Get the first item in the list of queries.
+        channel_dict: dict = session.query(Channel).filter(Channel.channel_id == channel_id)[0].as_dict()
+
+        # Commit transaction (NB: makes detached instances expire)
+        session.commit()
+    except SQLAlchemyError:
+        raise
+    finally:
+        session.close()
+
+    return channel_dict
+
+
+def get_video(video_id) -> dict:
+    session = db_session()
+
+    try:
+        # Get the first item in the list of queries.
+        video_dict: dict = session.query(Video).filter(Video.video_id == video_id)[0].as_dict()
+
+        # Commit transaction (NB: makes detached instances expire)
+        session.commit()
+    except SQLAlchemyError:
+        raise
+    finally:
+        session.close()
+
+    return video_dict
+
+
 def del_row_by_filter(table_obj, **kwargs):
     # Create a Session
     session = db_session()
