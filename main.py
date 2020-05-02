@@ -1,17 +1,32 @@
 import json
+import re
+
 from flask import Flask, make_response, request, jsonify, Response
 from bs4 import BeautifulSoup
-import datetime
+from datetime import datetime, timezone
 import os
 
-from utils import pp_dict
+from database import init_db
+from database.models.channel import Channel
+from database.models.video import Video
+from database.operations import add_row, row_exists, update_channel, update_video, del_row_by_filter
+from utils import pp_dict, datetime_ns_to_ms
 
 # Set up Flask.
 app = Flask(__name__)
 
+# FIXME: Add handling for UTC offset (need to remove the ':')
+FEED_UPDATED_FMT = "%Y-%m-%dT%H:%M:%S.%f+00:00"
+FEED_PUBLISHED_FMT = "%Y-%m-%dT%H:%M:%S+00:00"
+FEED_DELETED_FMT = FEED_PUBLISHED_FMT
+
 
 def handle_get(req, callback=None):
+    verify_token = None
+    hmac_secret = None
     topic = req.args["hub.topic"]
+    r = r'^https:\/\/www\.youtube\.com\/xml\/feeds\/videos\.xml\?channel_id=(.*)$'
+    channel_id = re.match(r, topic).groups()[0]
     challenge = req.args["hub.challenge"]
     mode = req.args["hub.mode"]
     if 'hub.lease_seconds' in req.args:
@@ -26,6 +41,14 @@ def handle_get(req, callback=None):
           "challenge: {}\n"
           "mode: {}\n"
           "lease_seconds: {}".format(topic, challenge, mode, lease_seconds))
+
+    # Add to database if not exist, else update existing.
+    if not row_exists(Channel, channel_id=channel_id):
+        add_row(Channel(channel_id=channel_id, subscribed=(mode == "subscribe"),
+                        verify_token=verify_token, hmac_secret=hmac_secret))
+    else:
+        update_channel(channel_id, subscribed=(mode == "subscribe"),
+                       verify_token=verify_token, hmac_secret=hmac_secret)
 
     return challenge
 
@@ -46,6 +69,13 @@ def handle_deleted_entry(xml, callback=None):
             'uri': deleted_entry.find('at:by').uri.string
         }
     }
+
+    video_id = deleted_entry['ref'].split(':')[-1]
+
+    if row_exists(Video, video_id=video_id):
+        # FIXME: Video doesn't get deleted from DB.
+        # Delete video from DB as it was deleted on YouTube's end.
+        del_row_by_filter(Video, video_id=video_id)
 
     if callback is not None:
         callback(result)
@@ -70,6 +100,24 @@ def handle_video(xml, callback=None):
             'updated': xml.feed.entry.updated.string
         }
     }
+
+    entry = result["entry"]
+
+    # Add to database if not exist, else update existing.
+    if not row_exists(Video, video_id=entry["video_id"]):
+        add_row(
+            Video(video_id=entry["video_id"],
+                  channel_id=entry["channel_id"],
+                  video_title=entry["title"],
+                  published_on=datetime.strptime(entry["published"], FEED_PUBLISHED_FMT),
+                  updated_on=datetime.strptime(datetime_ns_to_ms(entry["updated"]), FEED_UPDATED_FMT)
+                  )
+        )
+        if row_exists(Channel, channel_id=entry["channel_id"]):
+            # Update channel title (only included with a Video Atom feed).
+            update_channel(entry["channel_id"], channel_title=entry["channel_title"])
+    else:
+        update_video(entry['video_id'], video_title=entry["video_title"])
 
     if callback is not None:
         callback(result)
@@ -99,7 +147,7 @@ def psh():
     print("")
 
     if request.method == 'POST':
-        datetime_stamp = datetime.datetime.utcnow().isoformat().replace(':', '-').replace('T', '_')
+        datetime_stamp = datetime.now(timezone.utc).isoformat().replace(':', '-').replace('T', '_')
         # xml = BeautifulSoup(request.data, features="xml")  # Doesn't standardise tag casing
         xml = BeautifulSoup(request.data, "lxml")  # Standardises tag casing
 
@@ -114,9 +162,12 @@ def psh():
             if d is not None:
                 pp_dict(d)
         else:
-            d = handle_video(xml)
-            if d is not None:
-                pp_dict(d)
+            if xml.feed.title.string == "YouTube video feed":
+                d = handle_video(xml)
+                if d is not None:
+                    pp_dict(d)
+            else:
+                print("ERROR: Got unexpected feed type, aborting!")
 
     if request.method == 'GET':
         retv = handle_get(request)
@@ -125,6 +176,7 @@ def psh():
 
 
 if __name__ == "__main__":
+    init_db()
     listener_bind_host = "127.0.0.1"
     listener_bind_port = 5000
 
