@@ -3,6 +3,7 @@ import unittest
 
 from bs4 import BeautifulSoup
 
+from database import init_db
 from main import handle_deleted_entry
 from utils import pp_dict
 
@@ -28,9 +29,9 @@ class TestDeletedEntry(unittest.TestCase):
 
         expected_result = {
             'deleted_entry': {
-                "ref": "yt:video:NqgaGLL508c",
+                "ref": "yt:video:qX0wVo5GE6A",
                 "when": "2020-05-01T16:58:14+00:00",
-                "link": {"href": "https://www.youtube.com/watch?v=NqgaGLL508c"}
+                "link": {"href": "https://www.youtube.com/watch?v=qX0wVo5GE6A"}
             },
             "by": {
                 "name": "BluABK~",
@@ -44,6 +45,7 @@ class TestDeletedEntry(unittest.TestCase):
 
 
 if __name__ == '__main__':
+    init_db()
     # Workaround for unreliable CWD:
     # When running test_all.py CWD is suddenly this dir, not project root,
     # but when running this test stand-alone CWD is project root.
