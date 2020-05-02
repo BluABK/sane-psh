@@ -1,3 +1,4 @@
 /.idea/
 /Pipfile.lock
 /sane-psh.db
+/tests/sane-psh.db
