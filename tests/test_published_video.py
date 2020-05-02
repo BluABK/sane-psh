@@ -3,6 +3,7 @@ import unittest
 
 from bs4 import BeautifulSoup
 
+from database import init_db
 from main import handle_video
 from utils import pp_dict
 
@@ -51,6 +52,7 @@ class TestPublishedVideo(unittest.TestCase):
 
 
 if __name__ == '__main__':
+    init_db()
     # Workaround for unreliable CWD:
     # When running test_all.py CWD is suddenly this dir, not project root,
     # but when running this test stand-alone CWD is project root.
