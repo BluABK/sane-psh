@@ -1,13 +1,15 @@
 import os
+import pathlib
 import unittest
 
 from werkzeug.datastructures import ImmutableMultiDict
 
 from database import init_db
 from database.operations import get_channel
+from globals import TEST_DATA_PATH
 from main import handle_get
 
-XML_FILEPATH = 'dumps/published_video.xml'
+XML_FILEPATH = str(TEST_DATA_PATH.joinpath('published_video.xml'))
 
 
 class FakeGetRequest:
@@ -83,8 +85,4 @@ class TestSubscriptionRequest(unittest.TestCase):
 
 if __name__ == '__main__':
     init_db()
-    # Workaround for unreliable CWD:
-    # When running test_all.py CWD is suddenly this dir, not project root,
-    # but when running this test stand-alone CWD is project root.
-    XML_FILEPATH = os.path.join('tests', XML_FILEPATH)
     unittest.main()

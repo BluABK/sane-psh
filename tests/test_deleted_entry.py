@@ -6,8 +6,9 @@ from bs4 import BeautifulSoup
 from database import init_db
 from main import handle_deleted_entry
 from utils import pp_dict
+from globals import TEST_DATA_PATH
 
-XML_FILEPATH = 'dumps/deleted_entry.xml'
+XML_FILEPATH = str(TEST_DATA_PATH.joinpath('deleted_entry.xml'))
 
 
 class TestDeletedEntry(unittest.TestCase):
@@ -46,8 +47,4 @@ class TestDeletedEntry(unittest.TestCase):
 
 if __name__ == '__main__':
     init_db()
-    # Workaround for unreliable CWD:
-    # When running test_all.py CWD is suddenly this dir, not project root,
-    # but when running this test stand-alone CWD is project root.
-    XML_FILEPATH = os.path.join('tests', XML_FILEPATH)
     unittest.main()
