@@ -202,9 +202,6 @@ def psh():
 
 
 if __name__ == "__main__":
-    print(CONFIG)
     init_db()
-    listener_bind_host = "0.0.0.0"
-    listener_bind_port = 5015
 
-    app.run(host=listener_bind_host, port=listener_bind_port, debug=True)
+    app.run(host=CONFIG["bind_host"], port=CONFIG["bind_port"], debug=CONFIG["debug_flask"])
