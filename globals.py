@@ -5,4 +5,5 @@ import pathlib
 PROJECT_ROOT_DIR = pathlib.Path(__file__).parent.absolute()
 DATABASE_FILENAME = 'sane-psh.db'
 DATABASE_PATH = PROJECT_ROOT_DIR.joinpath(DATABASE_FILENAME)
+CONFIG_PATH = PROJECT_ROOT_DIR.joinpath('config.json')
 TEST_DATA_PATH = PROJECT_ROOT_DIR.joinpath('tests').joinpath('data')

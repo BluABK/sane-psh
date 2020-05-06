@@ -12,10 +12,12 @@ from database.models.video import Video
 from database.operations import add_row, row_exists, update_channel, update_video, del_row_by_filter
 from utils import pp_dict, datetime_ns_to_ms
 
+from globals import CONFIG_PATH
+
 API_VERSION = 1
 API_BASEROUTE = '/api'
 
-with open('config.json', 'r') as f:
+with open(CONFIG_PATH, 'r') as f:
     CONFIG = json.load(f)
 
 # Set up Flask.
@@ -60,9 +62,6 @@ def handle_get(req, callback=None):
         lease_seconds = req.args["hub.lease_seconds"]
     else:
         lease_seconds = ""
-    if 'hub.verify_token' in req.args:
-        verify_token = request.args['hub.verify_token']
-        # retv = verify_token
 
     print("topic: {}\n"
           "challenge: {}\n"
