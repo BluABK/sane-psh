@@ -12,6 +12,12 @@ from database.models.video import Video
 from database.operations import add_row, row_exists, update_channel, update_video, del_row_by_filter
 from utils import pp_dict, datetime_ns_to_ms
 
+API_VERSION = 1
+API_BASEROUTE = '/api'
+
+with open('config.json', 'r') as f:
+    CONFIG = json.load(f)
+
 # Set up Flask.
 app = Flask(__name__)
 
@@ -21,7 +27,28 @@ FEED_PUBLISHED_FMT = "%Y-%m-%dT%H:%M:%S+00:00"
 FEED_DELETED_FMT = FEED_PUBLISHED_FMT
 
 
+def check_required_args(request_args: list, required_keys: list):
+    for key in required_keys:
+        if key not in request_args:
+            return {"result": False, "arg": key}
+
+    return {"result": True, "arg": None}
+
+
 def handle_get(req, callback=None):
+    # If verification token is specified as a requirement, check that it is valid.
+    if CONFIG["require_verification_token"] is True:
+        if 'hub.verify_token' in list(req.args.keys()):
+            if req.args["hub.verify_token"] != CONFIG["verification_token"]:
+                return "ERROR: hub.verify_token mistmatch!"
+        else:
+            return "ERROR: GET Request is missing required argument: hub.verify_token"
+
+    # Check that all required args are included in the request:
+    chk = check_required_args(list(req.args.keys()), ['hub.topic', 'hub.challenge', 'hub.mode'])
+    if not chk["result"]:
+        return "ERROR: GET Request is missing required argument: {arg}".format(arg=chk["arg"])
+
     verify_token = None
     hmac_secret = None
     topic = req.args["hub.topic"]
@@ -124,7 +151,7 @@ def handle_video(xml, callback=None):
     return result
 
 
-@app.route('/sane-psh/', methods=['GET', 'POST'])
+@app.route('{}/notifications'.format(API_BASEROUTE), methods=['GET', 'POST'])
 def psh():
     retv = ''
     indent = 4 * ' '
@@ -175,8 +202,9 @@ def psh():
 
 
 if __name__ == "__main__":
+    print(CONFIG)
     init_db()
-    listener_bind_host = "127.0.0.1"
-    listener_bind_port = 5000
+    listener_bind_host = "0.0.0.0"
+    listener_bind_port = 5015
 
     app.run(host=listener_bind_host, port=listener_bind_port, debug=True)
