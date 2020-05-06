@@ -9,7 +9,7 @@
 ## How to Use
 1. Install on a server that is internet accessible.
 2. Follow [YouTube's official guide](https://developers.google.com/youtube/v3/guides/push_notifications):
-    * Callback URL:  http://<domain.tld>/sane-psh/
+    * Callback URL:  http://<domain.tld>/api/notifications
     * Topic: https://www.youtube.com/xml/feeds/videos.xml?channel_id=CHANNEL_ID
     * Verify type: Synchronous
 

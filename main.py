@@ -1,10 +1,12 @@
+import os
 import json
 import re
+from datetime import datetime, timezone
 
 from flask import Flask, make_response, request, jsonify, Response
 from bs4 import BeautifulSoup
-from datetime import datetime, timezone
-import os
+import hmac
+import hashlib
 
 from database import init_db
 from database.models.channel import Channel
@@ -42,7 +44,7 @@ def handle_get(req, callback=None):
     if CONFIG["require_verification_token"] is True:
         if 'hub.verify_token' in list(req.args.keys()):
             if req.args["hub.verify_token"] != CONFIG["verification_token"]:
-                return "ERROR: hub.verify_token mistmatch!"
+                return "ERROR: hub.verify_token mismatch!"
         else:
             return "ERROR: GET Request is missing required argument: hub.verify_token"
 
@@ -71,10 +73,10 @@ def handle_get(req, callback=None):
     # Add to database if not exist, else update existing.
     if not row_exists(Channel, channel_id=channel_id):
         add_row(Channel(channel_id=channel_id, subscribed=bool(mode == "subscribe"),
-                        verify_token=verify_token, hmac_secret=hmac_secret))
+                        hmac_secret=hmac_secret))
     else:
         update_channel(channel_id, subscribed=(mode == "subscribe"),
-                       verify_token=verify_token, hmac_secret=hmac_secret)
+                       hmac_secret=hmac_secret)
 
     return challenge
 
@@ -172,6 +174,20 @@ def psh():
     print("")
 
     if request.method == 'POST':
+        # Verify HMAC authentication, if specified in config.
+        if CONFIG["require_hmac_authentication"]:
+            if 'X-Hub-Signature' in request.headers:
+                signature = hmac.new(str.encode(CONFIG["hmac_secret"]), request.data, hashlib.sha1).hexdigest()
+                if "sha1={}".format(signature) != request.headers['X-Hub-Signature']:
+                    print("ERROR: HMAC Signature mismatch! ({theirs} != {ours})".format(
+                        theirs=request.headers['X-Hub-Signature'], ours=signature))
+                    return "ERROR: HMAC Signature mismatch!"
+
+                print("Valid Signature! \\o/")
+            else:
+                print("ERROR: POST Request is missing required HMAC authentication (X-Hub-Signature) header!")
+                return "ERROR: POST Request is missing required HMAC authentication (X-Hub-Signature) header!"
+
         datetime_stamp = datetime.now(timezone.utc).isoformat().replace(':', '-').replace('T', '_')
         # xml = BeautifulSoup(request.data, features="xml")  # Doesn't standardise tag casing
         xml = BeautifulSoup(request.data, "lxml")  # Standardises tag casing
