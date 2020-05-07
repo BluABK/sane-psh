@@ -17,6 +17,7 @@ from database.operations import add_row, row_exists, update_channel, update_vide
 from utils import datetime_ns_to_ms, dict_to_pretty_string
 
 from globals import CONFIG_PATH
+VIDEO_ID_HISTORY = []
 
 API_VERSION = 1
 API_BASEROUTE = '/api'
@@ -37,8 +38,8 @@ else:
     }
 
 # Set up Flask.
-log = logging.getLogger('werkzeug')
-log.setLevel(CONFIG["flask_log_level"])
+flask_log = logging.getLogger('werkzeug')
+flask_log.setLevel(CONFIG["flask_log_level"])
 
 app = Flask(__name__)
 
@@ -129,6 +130,7 @@ def handle_deleted_entry(xml, callback=None):
 
 
 def handle_video(xml, callback=None):
+    global VIDEO_ID_HISTORY
     result = {
         "links": [{'href': lnk.get('href'), 'rel': lnk.get('rel')} for lnk in xml.feed.find_all('link')],
         "title": xml.feed.title.string,
@@ -153,7 +155,27 @@ def handle_video(xml, callback=None):
 
     # Add to database if not exist, else update existing.
     if not row_exists(Video, video_id=entry["video_id"]):
-        entry["kind"] = "new"
+        # If there is more than two minutes time difference between publish and update,
+        # the video is probably not freshly posted; treat it as an update.
+        if updated_on.timestamp() - published_on.timestamp() > 120:
+            entry["kind"] = "update"
+        else:
+            # Indicate video as new as it didn't exist in DB and update is less than two minutes older.
+            entry["kind"] = "new"
+
+        # DB sometimes isn't written fast enough for the above check to come true.
+        # use a global list for reference, if configured to.
+        if CONFIG["increase_kind_precision"] is True:
+            if entry["video_id"] in VIDEO_ID_HISTORY:
+                # Video exists in the global video ID list, so it is an update.
+                entry["kind"] = "update"
+            else:
+                entry["kind"] = "new"
+        else:
+            # Not configured for increased precision, so assume new.
+            entry["kind"] = "new"
+
+        # Write video to DB.
         add_row(
             Video(video_id=entry["video_id"],
                   channel_id=entry["channel_id"],
@@ -162,16 +184,20 @@ def handle_video(xml, callback=None):
                   updated_on=updated_on
                   )
         )
+
+        # Update global list of video IDs, if configured to.
+        if CONFIG["increase_kind_precision"] is True:
+            if entry["video_id"] not in VIDEO_ID_HISTORY:
+                VIDEO_ID_HISTORY.append(entry["video_id"])
+
         if row_exists(Channel, channel_id=entry["channel_id"]):
             # Update channel title (only included with a Video Atom feed).
             update_channel(entry["channel_id"], channel_title=entry["channel_title"])
+
+    # Update existing.
     else:
-        # If there is more than a minute time difference between publish and update,
-        # treat it as an update.
-        if updated_on.timestamp() - published_on.timestamp() > 60:
-            entry["kind"] = "update"
-        else:
-            entry["kind"] = "new"
+        entry["kind"] = "update"
+
         update_video(entry['video_id'], video_title=entry["video_title"])
 
     if callback is not None:
@@ -199,8 +225,9 @@ def console_log_handled_video(d):
 
     url = entry["links"][0]["href"]
 
-    console_log("{publish_kind}:\t {channel_title}: {video_title} [{url}]".format(
-        publish_kind=entry["kind"].upper(), channel_title=channel_title, video_title=video_title, url=url))
+    console_log("{publish_kind} [{url}] {channel_title} - {video_title}".format(
+        publish_kind="{}:".format(entry["kind"]).upper().ljust(7), channel_title=channel_title,
+        video_title=video_title, url=url))
 
 
 @app.route('{}/notifications'.format(API_BASEROUTE), methods=['GET', 'POST'])

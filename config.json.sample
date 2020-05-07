@@ -5,5 +5,6 @@
   "require_verification_token": false,
   "verification_token": "",
   "require_hmac_authentication": false,
-  "hmac_secret": ""
+  "hmac_secret": "",
+  "increase_kind_precision": false
 }
