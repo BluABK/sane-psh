@@ -163,17 +163,16 @@ def handle_video(xml, callback=None):
             # Indicate video as new as it didn't exist in DB and update is less than two minutes older.
             entry["kind"] = "new"
 
-        # DB sometimes isn't written fast enough for the above check to come true.
-        # use a global list for reference, if configured to.
-        if CONFIG["increase_kind_precision"] is True:
-            if entry["video_id"] in VIDEO_ID_HISTORY:
-                # Video exists in the global video ID list, so it is an update.
-                entry["kind"] = "update"
+            # DB sometimes isn't written fast enough for the above check to come true.
+            # use a global list for reference, if configured to.
+            if CONFIG["increase_kind_precision"] is True:
+                if entry["video_id"] in VIDEO_ID_HISTORY:
+                    # Video exists in the global video ID list, so it is an update.
+                    entry["kind"] = "update"
+
             else:
+                # Not configured for increased precision, so assume new.
                 entry["kind"] = "new"
-        else:
-            # Not configured for increased precision, so assume new.
-            entry["kind"] = "new"
 
         # Write video to DB.
         add_row(
