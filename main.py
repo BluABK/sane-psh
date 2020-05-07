@@ -1,18 +1,20 @@
 import os
 import json
 import re
-from datetime import datetime, timezone
+import datetime
+from datetime import timezone
 
-from flask import Flask, make_response, request, jsonify, Response
+from flask import Flask, make_response, request
 from bs4 import BeautifulSoup
 import hmac
 import hashlib
+import logging
 
 from database import init_db
 from database.models.channel import Channel
 from database.models.video import Video
 from database.operations import add_row, row_exists, update_channel, update_video, del_row_by_filter
-from utils import pp_dict, datetime_ns_to_ms
+from utils import datetime_ns_to_ms, dict_to_pretty_string
 
 from globals import CONFIG_PATH
 
@@ -27,6 +29,7 @@ else:
         "bind_port": 5015,
         "bind_host": "0.0.0.0",
         "debug_flask": False,
+        "flask_log_level": 0,
         "require_verification_token": True,
         "verification_token": "Test1234",
         "require_hmac_authentication": False,
@@ -34,6 +37,9 @@ else:
     }
 
 # Set up Flask.
+log = logging.getLogger('werkzeug')
+log.setLevel(CONFIG["flask_log_level"])
+
 app = Flask(__name__)
 
 # FIXME: Add handling for UTC offset (need to remove the ':')
@@ -101,7 +107,8 @@ def handle_deleted_entry(xml, callback=None):
             'link':
                 [{'href': lnk.get('href')} for lnk in deleted_entry.find_all('link')]
                 if len(deleted_entry.find_all('link')) > 1
-                else {'href': deleted_entry.link.get('href')}
+                else {'href': deleted_entry.link.get('href')},
+            'kind': "delete"
         },
         'by': {
             'name': deleted_entry.find('at:by').find('name').string,
@@ -141,20 +148,30 @@ def handle_video(xml, callback=None):
 
     entry = result["entry"]
 
+    published_on = datetime.datetime.strptime(entry["published"], FEED_PUBLISHED_FMT)
+    updated_on = datetime.datetime.strptime(datetime_ns_to_ms(entry["updated"]), FEED_UPDATED_FMT)
+
     # Add to database if not exist, else update existing.
     if not row_exists(Video, video_id=entry["video_id"]):
+        entry["kind"] = "new"
         add_row(
             Video(video_id=entry["video_id"],
                   channel_id=entry["channel_id"],
                   video_title=entry["video_title"],
-                  published_on=datetime.strptime(entry["published"], FEED_PUBLISHED_FMT),
-                  updated_on=datetime.strptime(datetime_ns_to_ms(entry["updated"]), FEED_UPDATED_FMT)
+                  published_on=published_on,
+                  updated_on=updated_on
                   )
         )
         if row_exists(Channel, channel_id=entry["channel_id"]):
             # Update channel title (only included with a Video Atom feed).
             update_channel(entry["channel_id"], channel_title=entry["channel_title"])
     else:
+        # If there is more than a minute time difference between publish and update,
+        # treat it as an update.
+        if updated_on.timestamp() - published_on.timestamp() > 60:
+            entry["kind"] = "update"
+        else:
+            entry["kind"] = "new"
         update_video(entry['video_id'], video_title=entry["video_title"])
 
     if callback is not None:
@@ -163,26 +180,51 @@ def handle_video(xml, callback=None):
     return result
 
 
+def dump_request(debug_str):
+    datetime_stamp = datetime.datetime.now(timezone.utc).isoformat().replace(':', '-').replace('T', '_')
+
+    with open('requests.txt'.format(datetime_stamp), 'a') as f:
+        f.write(debug_str + '\n')
+
+
+def console_log(s):
+    datetime_stamp_human_readable = datetime.datetime.now(timezone.utc).isoformat().replace('T', ' ').split('+')[0]
+    print("[{dt}] {data}".format(dt=datetime_stamp_human_readable, data=s))
+
+
+def console_log_handled_video(d):
+    entry = d["entry"]
+    channel_title = entry["channel_title"]
+    video_title = entry["video_title"]
+
+    url = entry["links"][0]["href"]
+
+    console_log("{publish_kind}:\t {channel_title}: {video_title} [{url}]".format(
+        publish_kind=entry["kind"].upper(), channel_title=channel_title, video_title=video_title, url=url))
+
+
 @app.route('{}/notifications'.format(API_BASEROUTE), methods=['GET', 'POST'])
 def psh():
+    datetime_stamp = datetime.datetime.now(timezone.utc).isoformat().replace(':', '-').replace('T', '_')
+    datetime_stamp_human_readable = datetime.datetime.now(
+        timezone.utc).isoformat().replace('T', ' ').split('+')[0].split('.')[0]
+    debug_str = ""
     retv = ''
     indent = 4 * ' '
-    print("NEW {method} REQUEST: ".format(method=request.method))
-    print("{indent}REQ-PATH: {}".format(request.path, indent=indent))
+    debug_str += "[{dt}] NEW {method} REQUEST: \n".format(dt=datetime_stamp_human_readable, method=request.method)
+    debug_str += "{indent}REQ-PATH: {}\n".format(request.path, indent=indent)
 
-    print("{indent}HEADERS: ".format(indent=indent))
+    debug_str += "{indent}HEADERS: ".format(indent=indent)
     for key, value in request.headers.items():
-        print("{indent}{key}: {value}".format(key=key, value=value, indent=indent+indent))
+        debug_str += "{indent}{key}: {value}\n".format(key=key, value=value, indent=indent+indent)
     if len(request.args) > 0:
-        print("{indent}ARGS: {}".format(request.args, indent=indent))
+        debug_str +=  "{indent}ARGS: {}\n".format(request.args, indent=indent)
     if request.data is not None:
-        print("{indent}DATA: \n{indent}{indent}{data}".format(data=request.data, indent=indent))
+        debug_str += "{indent}DATA: \n{indent}{indent}{data}\n".format(data=request.data, indent=indent)
     if len(request.form) > 0:
-        print("{indent}FORM: {}".format(request.form, indent=indent))
+        debug_str += "{indent}FORM: {}\n".format(request.form, indent=indent)
     if request.json is not None:
-        print("{indent}JSON: {}".format(request.json, indent=indent))
-
-    print("")
+        debug_str += "{indent}JSON: {}\n".format(request.json, indent=indent)
 
     if request.method == 'POST':
         # Verify HMAC authentication, if specified in config.
@@ -190,16 +232,20 @@ def psh():
             if 'X-Hub-Signature' in request.headers:
                 signature = hmac.new(str.encode(CONFIG["hmac_secret"]), request.data, hashlib.sha1).hexdigest()
                 if "sha1={}".format(signature) != request.headers['X-Hub-Signature']:
-                    print("ERROR: HMAC Signature mismatch! ({theirs} != {ours})".format(
+                    console_log("ERROR: HMAC Signature mismatch! ({theirs} != {ours})".format(
                         theirs=request.headers['X-Hub-Signature'], ours=signature))
+                    debug_str += "ERROR: HMAC Signature mismatch! ({theirs} != {ours})\n".format(
+                        theirs=request.headers['X-Hub-Signature'], ours=signature)
+                    dump_request(debug_str)
                     return "ERROR: HMAC Signature mismatch!"
 
-                print("Valid Signature! \\o/")
+                debug_str += "Valid Signature!\n"
             else:
-                print("ERROR: POST Request is missing required HMAC authentication (X-Hub-Signature) header!")
+                console_log("ERROR: POST Request is missing required HMAC authentication (X-Hub-Signature) header!")
+                debug_str += "ERROR: POST Request is missing required HMAC authentication (X-Hub-Signature) header!\n"
+                dump_request(debug_str)
                 return "ERROR: POST Request is missing required HMAC authentication (X-Hub-Signature) header!"
 
-        datetime_stamp = datetime.now(timezone.utc).isoformat().replace(':', '-').replace('T', '_')
         # xml = BeautifulSoup(request.data, features="xml")  # Doesn't standardise tag casing
         xml = BeautifulSoup(request.data, "lxml")  # Standardises tag casing
 
@@ -212,14 +258,23 @@ def psh():
         if xml.feed.find('at:deleted-entry'):
             d = handle_deleted_entry(xml)
             if d is not None:
-                pp_dict(d)
+                debug_str += dict_to_pretty_string(d)
+
+                console_log("DELETE: {video_id}".format(video_id=d["deleted_entry"]["ref"].split(':')[-1]))
         else:
             if xml.feed.title.string == "YouTube video feed":
                 d = handle_video(xml)
                 if d is not None:
-                    pp_dict(d)
+                    debug_str += dict_to_pretty_string(d)
+
+                    console_log_handled_video(d)
             else:
-                print("ERROR: Got unexpected feed type, aborting!")
+                console_log("ERROR: Got unexpected feed type, aborting!")
+                debug_str += "ERROR: Got unexpected feed type, aborting!\n"
+                dump_request(debug_str)
+                return "ERROR: Got unexpected feed type, aborting!"
+
+        dump_request(debug_str)
 
     if request.method == 'GET':
         retv = handle_get(request)
