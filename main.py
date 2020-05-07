@@ -19,8 +19,19 @@ from globals import CONFIG_PATH
 API_VERSION = 1
 API_BASEROUTE = '/api'
 
-with open(CONFIG_PATH, 'r') as f:
-    CONFIG = json.load(f)
+if os.path.isfile(CONFIG_PATH):
+    with open(CONFIG_PATH, 'r') as f:
+        CONFIG = json.load(f)
+else:
+    CONFIG = {
+        "bind_port": 5015,
+        "bind_host": "0.0.0.0",
+        "debug_flask": False,
+        "require_verification_token": True,
+        "verification_token": "Test1234",
+        "require_hmac_authentication": False,
+        "hmac_secret": "Test1234"
+    }
 
 # Set up Flask.
 app = Flask(__name__)
