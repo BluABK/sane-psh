@@ -3,3 +3,5 @@
 /sane-psh.db
 /tests/sane-psh.db
 /config.json
+/request_cache/
+/requests.txt
