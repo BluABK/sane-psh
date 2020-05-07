@@ -34,7 +34,8 @@ else:
         "require_verification_token": True,
         "verification_token": "Test1234",
         "require_hmac_authentication": False,
-        "hmac_secret": "Test1234"
+        "hmac_secret": "Test1234",
+        "increase_kind_precision": False
     }
 
 # Set up Flask.
