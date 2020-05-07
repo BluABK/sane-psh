@@ -33,7 +33,7 @@ class TestDeletedEntry(unittest.TestCase):
                 "ref": "yt:video:qX0wVo5GE6A",
                 "when": "2020-05-01T16:58:14+00:00",
                 "link": {"href": "https://www.youtube.com/watch?v=qX0wVo5GE6A"},
-                "kind": "deleted"
+                "kind": "delete"
             },
             "by": {
                 "name": "BluABK~",
