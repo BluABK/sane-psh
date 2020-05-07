@@ -43,7 +43,8 @@ class TestPublishedVideo(unittest.TestCase):
                 'channel_title': 'BluABK~',
                 'channel_uri': 'https://www.youtube.com/channel/UCLozjflf3i84bu_2jLTK2rA',
                 'published': '2020-05-01T17:03:45+00:00',
-                'updated': '2020-05-01T17:04:02.426578815+00:00'
+                'updated': '2020-05-01T17:04:02.426578815+00:00',
+                'kind': 'new'
                 }
              }
 
