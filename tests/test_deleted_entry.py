@@ -4,7 +4,7 @@ import unittest
 from bs4 import BeautifulSoup
 
 from database import init_db
-from main import handle_deleted_entry
+from main import handle_deleted_entry, console_log
 from utils import pp_dict
 from globals import TEST_DATA_PATH
 
@@ -41,6 +41,7 @@ class TestDeletedEntry(unittest.TestCase):
         }
 
         test_result = handle_deleted_entry(xml)
+        console_log("Deleted: {video_id}".format(video_id=test_result["deleted_entry"]["ref"].split(':')[-1]))
 
         self.assert_dict(test_result, expected_result)
 

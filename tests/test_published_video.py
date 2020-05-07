@@ -5,7 +5,7 @@ from bs4 import BeautifulSoup
 
 from database import init_db
 from globals import TEST_DATA_PATH
-from main import handle_video
+from main import handle_video, console_log_handled_video
 from utils import pp_dict
 
 XML_FILEPATH = str(TEST_DATA_PATH.joinpath('published_video.xml'))
@@ -48,6 +48,7 @@ class TestPublishedVideo(unittest.TestCase):
              }
 
         test_result = handle_video(xml)
+        console_log_handled_video(test_result)
 
         self.assert_dict(test_result, expected_result)
 
