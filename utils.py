@@ -30,6 +30,32 @@ def pp_dict(d, indent_lvl=0, indent_str='    ', suffix_last_item=None):
                                                           value=repr(d[key])))
 
 
+def dict_to_pretty_string(d: dict, indent_lvl=0, indent_str='    ', suffix_last_item=None) -> str:
+    s = ""
+    for key in d:
+        if type(d[key]) is dict:
+            s += ("{key}: \n".format(key=repr(key)))
+            dict_to_pretty_string(d[key], indent_lvl=indent_lvl + 1)
+        else:
+            # Handle dicts within lists.
+            if type(d[key]) is list and list_item_types_equal(d[key], dict):
+                s += "{key}: [\n".format(key=repr(key))
+                for item in d[key]:
+                    # Suffix ternary: Only gets set if list has more than one item, to avoid confusing separators.
+                    dict_to_pretty_string(item, indent_lvl=indent_lvl + 1, suffix_last_item=',' if len(d[key]) > 1 else None)
+                # Indent list close bracket to match indented list items (i.e. thus the +1).
+                s += "{indent}]\n".format(indent=(indent_lvl + 1) * indent_str)
+            else:
+                # Add suffix to last item in list if suffix is set.
+                if key == list(d.keys())[-1] and suffix_last_item is not None:
+                     s += "{indent}{key}: {value}{suffix}\n".format(indent=indent_lvl * indent_str, key=repr(key),
+                                                                    value=repr(d[key]), suffix=suffix_last_item)
+                else:
+                    s += "{indent}{key}: {value}\n".format(indent=indent_lvl * indent_str, key=repr(key),
+                                                           value=repr(d[key]))
+    return s
+
+
 def datetime_ns_to_ms(dt):
     """
     Converts a datetime with nanoseconds to a datetime with milliseconds.
@@ -38,7 +64,7 @@ def datetime_ns_to_ms(dt):
     :return:
     """
     lhs, rhs = dt.split('.')
-    offset = rhs[9:]
-    ms = rhs[:6]
+    offset = rhs.split('+')[1]
+    ms = rhs.split('+')[0][:6]
 
-    return ".".join([lhs, ms + offset])
+    return "{}+{}".format(".".join([lhs, ms]), offset)
