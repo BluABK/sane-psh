@@ -1,6 +1,8 @@
-import json
-import os
 import unittest
+
+# NB: This *MUST* be imported before any database modules, else config overrides fail.
+# noinspection PyUnresolvedReferences
+import tests.setup.apply_test_settings
 
 from database import init_db
 from handlers.config_handler import load_config

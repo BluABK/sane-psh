@@ -1,14 +1,16 @@
-import os
 import unittest
 
 from bs4 import BeautifulSoup
 
+# NB: This *MUST* be imported before any database modules, else config overrides fail.
+# noinspection PyUnresolvedReferences
+from tests.setup import apply_test_settings
+
 from database import init_db
 from main import handle_deleted_entry, console_log
-from utils import pp_dict
-from settings import TEST_DATA_PATH
+import settings
 
-XML_FILEPATH = str(TEST_DATA_PATH.joinpath('deleted_entry.xml'))
+XML_FILEPATH = str(settings.TEST_DATA_PATH.joinpath('deleted_entry.xml'))
 
 
 class TestDeletedEntry(unittest.TestCase):

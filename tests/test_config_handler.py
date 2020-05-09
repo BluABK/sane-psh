@@ -1,8 +1,8 @@
 import json
 import unittest
 
-from handlers.config_handler import load_config, CONFIG, DEFAULT_CONFIG
-from settings import TEST_CONFIG_FILE_PATH
+from handlers.config_handler import load_config, DEFAULT_CONFIG
+import settings
 
 
 class TestConfigHandler(unittest.TestCase):
@@ -17,9 +17,9 @@ class TestConfigHandler(unittest.TestCase):
                 self.assertEqual(test_dict[key], correct_dict[key])
 
     def test_custom_config_file_load(self):
-        self.config = load_config(TEST_CONFIG_FILE_PATH)
+        self.config = load_config(settings.TEST_CONFIG_FILE_PATH)
 
-        with open(TEST_CONFIG_FILE_PATH, 'r') as f:
+        with open(settings.TEST_CONFIG_FILE_PATH, 'r') as f:
             self.test_config_json = json.load(f)
 
             for key, value in self.test_config_json.items():

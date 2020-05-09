@@ -1,18 +1,23 @@
-import os
 import unittest
 
 from bs4 import BeautifulSoup
 
-from database import init_db
-from settings import TEST_DATA_PATH
-from main import handle_video, console_log_handled_video
-from utils import pp_dict
+# NB: This *MUST* be imported before any database modules, else config overrides fail.
+# noinspection PyUnresolvedReferences
+from database.models.video import Video
+from tests.setup import apply_test_settings
 
-XML_FILEPATH = str(TEST_DATA_PATH.joinpath('published_video.xml'))
+from database import init_db
+from database.operations import del_row_by_filter, row_exists
+import settings
+from main import handle_video, console_log_handled_video
+
+XML_FILEPATH = str(settings.TEST_DATA_PATH.joinpath('published_video.xml'))
 
 
 class TestPublishedVideo(unittest.TestCase):
     cb_dict = {}
+    video_id = "qX0wVo5GE6A"
 
     def assert_dict(self, test_dict, correct_dict):
         self.assertEqual(len(test_dict), len(correct_dict))
@@ -22,6 +27,17 @@ class TestPublishedVideo(unittest.TestCase):
                 self.assert_dict(test_dict[key], correct_dict[key])
             else:
                 self.assertEqual(test_dict[key], correct_dict[key])
+
+    def delete_video_if_exist(self):
+        """
+        Delete video from DB if it exists, to avoid polluting the test.
+        :return:
+        """
+        if row_exists(Video, video_id=self.video_id):
+            # Delete video from DB as it was deleted on YouTube's end.
+            del_row_by_filter(Video, video_id=self.video_id)
+            print("WARNING: Deleted existing video entry for: {}.".format(self.video_id))
+            print("WARNING: Test environment/DB seems unclean!")
 
     def test_published_video(self):
         with open(XML_FILEPATH, 'r') as f:
@@ -36,7 +52,7 @@ class TestPublishedVideo(unittest.TestCase):
             'title': 'YouTube video feed', 'updated': '2020-05-01T17:04:02.426578815+00:00',
             'entry': {
                 'id': 'yt:video:qX0wVo5GE6A',
-                'video_id': 'qX0wVo5GE6A',
+                'video_id': self.video_id,
                 'channel_id': 'UCLozjflf3i84bu_2jLTK2rA',
                 'video_title': 'Test video (ignore me)',
                 'links': [{'href': 'https://www.youtube.com/watch?v=qX0wVo5GE6A', 'rel': ['alternate']}],

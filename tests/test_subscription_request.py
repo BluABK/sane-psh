@@ -5,16 +5,17 @@ import unittest
 
 from werkzeug.datastructures import ImmutableMultiDict
 
+# NB: This *MUST* be imported before any database modules, else config overrides fail.
+# noinspection PyUnresolvedReferences
+from tests.setup import apply_test_settings
+
 from database import init_db
 from database.operations import get_channel
-from handlers.config_handler import load_config
-from settings import TEST_DATA_PATH
+from handlers.config_handler import CONFIG
+import settings
 from main import handle_get
 
-XML_FILEPATH = str(TEST_DATA_PATH.joinpath('published_video.xml'))
-
-config = load_config()
-
+XML_FILEPATH = str(settings.TEST_DATA_PATH.joinpath('published_video.xml'))
 
 class FakeGetRequest:
     def __init__(self, args: ImmutableMultiDict):
@@ -45,7 +46,7 @@ class TestSubscriptionRequest(unittest.TestCase):
             args=ImmutableMultiDict(
                 [('hub.topic', 'https://www.youtube.com/xml/feeds/videos.xml?channel_id=UCLozjflf3i84bu_2jLTK2rA'),
                  ('hub.challenge', '3613557208738996482'), ('hub.mode', 'subscribe'), ('hub.lease_seconds', '432000'),
-                 ('hub.verify_token', config["verification_token"])])
+                 ('hub.verify_token', CONFIG["verification_token"])])
         )
 
         handle_get(req)
@@ -70,7 +71,7 @@ class TestSubscriptionRequest(unittest.TestCase):
             args=ImmutableMultiDict(
                 [('hub.topic', 'https://www.youtube.com/xml/feeds/videos.xml?channel_id=UCLozjflf3i84bu_2jLTK2rA'),
                  ('hub.challenge', '17674212813144385002'), ('hub.mode', 'unsubscribe'),
-                 ('hub.verify_token', config["verification_token"])])
+                 ('hub.verify_token', CONFIG["verification_token"])])
         )
 
         handle_get(req)
