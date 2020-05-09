@@ -36,16 +36,22 @@ def has_custom_config(config_file=CONFIG_PATH):
 
 
 def update_sample_config(sample_config=SAMPLE_CONFIG_PATH):
+    global DEFAULT_CONFIG
+
     with open(sample_config, 'w') as f:
         json.dump(DEFAULT_CONFIG, f, indent=4)
 
 
 def set_custom_config_options(cfg: json):
+    global CONFIG
+
     for key, value in cfg.items():
         CONFIG[key] = value
 
 
 def load_config(config_file=CONFIG_PATH):
+    global CONFIG
+
     # Create a sample config file.
     update_sample_config()
 
