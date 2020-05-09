@@ -49,8 +49,6 @@ def load_config(config_file=CONFIG_PATH):
     # Create a sample config file.
     update_sample_config()
 
-    cfg = CONFIG
-
     # If config file doesn't exist
     if has_custom_config():
         try:
@@ -62,4 +60,4 @@ def load_config(config_file=CONFIG_PATH):
                   "Falling back to default config.".format(exc, config_file))
             pass
 
-    return cfg
+    return CONFIG
