@@ -4,7 +4,7 @@ import unittest
 from bs4 import BeautifulSoup
 
 from database import init_db
-from globals import TEST_DATA_PATH
+from settings import TEST_DATA_PATH
 from main import handle_video, console_log_handled_video
 from utils import pp_dict
 

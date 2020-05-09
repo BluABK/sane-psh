@@ -1,7 +1,7 @@
 from sqlalchemy import create_engine
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker, scoped_session
-from globals import DATABASE_PATH
+from settings import DATABASE_PATH
 
 # Create a database engine.
 engine = create_engine('sqlite:////{}'.format(str(DATABASE_PATH)))

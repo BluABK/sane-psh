@@ -1,10 +1,10 @@
 {
-  "bind_port": 5015,
-  "bind_host": "0.0.0.0",
-  "debug_flask": false,
-  "require_verification_token": false,
-  "verification_token": "",
-  "require_hmac_authentication": false,
-  "hmac_secret": "",
-  "increase_kind_precision": false
+    "bind_port": 5015,
+    "bind_host": "0.0.0.0",
+    "debug_flask": false,
+    "require_verification_token": false,
+    "verification_token": "",
+    "require_hmac_authentication": false,
+    "hmac_secret": "",
+    "increase_kind_precision": false
 }

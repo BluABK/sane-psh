@@ -15,32 +15,16 @@ from database.models.channel import Channel
 from database.models.video import Video
 from database.operations import add_row, row_exists, update_channel, update_video, del_row_by_filter
 from utils import datetime_ns_to_ms, dict_to_pretty_string
+from handlers.config_handler import load_config, has_option
+from settings import API_BASEROUTE, API_VERSION
 
-from globals import CONFIG_PATH
 VIDEO_ID_HISTORY = []
 
-API_VERSION = 1
-API_BASEROUTE = '/api'
-
-if os.path.isfile(CONFIG_PATH):
-    with open(CONFIG_PATH, 'r') as f:
-        CONFIG = json.load(f)
-else:
-    CONFIG = {
-        "bind_port": 5015,
-        "bind_host": "0.0.0.0",
-        "debug_flask": False,
-        "flask_log_level": 0,
-        "require_verification_token": True,
-        "verification_token": "Test1234",
-        "require_hmac_authentication": False,
-        "hmac_secret": "Test1234",
-        "increase_kind_precision": False
-    }
+config = load_config()
 
 # Set up Flask.
 flask_log = logging.getLogger('werkzeug')
-flask_log.setLevel(CONFIG["flask_log_level"])
+flask_log.setLevel(config["flask_log_level"])
 
 app = Flask(__name__)
 
@@ -60,9 +44,9 @@ def check_required_args(request_args: list, required_keys: list):
 
 def handle_get(req, callback=None):
     # If verification token is specified as a requirement, check that it is valid.
-    if CONFIG["require_verification_token"] is True:
+    if config["require_verification_token"] is True:
         if 'hub.verify_token' in list(req.args.keys()):
-            if req.args["hub.verify_token"] != CONFIG["verification_token"]:
+            if req.args["hub.verify_token"] != config["verification_token"]:
                 return "ERROR: hub.verify_token mismatch!"
         else:
             return "ERROR: GET Request is missing required argument: hub.verify_token"
@@ -166,7 +150,7 @@ def handle_video(xml, callback=None):
 
             # DB sometimes isn't written fast enough for the above check to come true.
             # use a global list for reference, if configured to.
-            if CONFIG["increase_kind_precision"] is True:
+            if config["increase_kind_precision"] is True:
                 if entry["video_id"] in VIDEO_ID_HISTORY:
                     # Video exists in the global video ID list, so it is an update.
                     entry["kind"] = "update"
@@ -186,7 +170,7 @@ def handle_video(xml, callback=None):
         )
 
         # Update global list of video IDs, if configured to.
-        if CONFIG["increase_kind_precision"] is True:
+        if config["increase_kind_precision"] is True:
             if entry["video_id"] not in VIDEO_ID_HISTORY:
                 VIDEO_ID_HISTORY.append(entry["video_id"])
 
@@ -245,7 +229,7 @@ def psh():
     for key, value in request.headers.items():
         debug_str += "{indent}{key}: {value}\n".format(key=key, value=value, indent=indent+indent)
     if len(request.args) > 0:
-        debug_str +=  "{indent}ARGS: {}\n".format(request.args, indent=indent)
+        debug_str += "{indent}ARGS: {}\n".format(request.args, indent=indent)
     if request.data is not None:
         debug_str += "{indent}DATA: \n{indent}{indent}{data}\n".format(data=request.data, indent=indent)
     if len(request.form) > 0:
@@ -255,9 +239,9 @@ def psh():
 
     if request.method == 'POST':
         # Verify HMAC authentication, if specified in config.
-        if CONFIG["require_hmac_authentication"]:
+        if config["require_hmac_authentication"]:
             if 'X-Hub-Signature' in request.headers:
-                signature = hmac.new(str.encode(CONFIG["hmac_secret"]), request.data, hashlib.sha1).hexdigest()
+                signature = hmac.new(str.encode(config["hmac_secret"]), request.data, hashlib.sha1).hexdigest()
                 if "sha1={}".format(signature) != request.headers['X-Hub-Signature']:
                     console_log("ERROR: HMAC Signature mismatch! ({theirs} != {ours})".format(
                         theirs=request.headers['X-Hub-Signature'], ours=signature))
@@ -310,6 +294,7 @@ def psh():
 
 
 if __name__ == "__main__":
+    print("Sane-PSH: Started.")
     init_db()
 
-    app.run(host=CONFIG["bind_host"], port=CONFIG["bind_port"], debug=CONFIG["debug_flask"])
+    app.run(host=config["bind_host"], port=config["bind_port"], debug=config["debug_flask"])

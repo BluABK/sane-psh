@@ -7,25 +7,13 @@ from werkzeug.datastructures import ImmutableMultiDict
 
 from database import init_db
 from database.operations import get_channel
-from globals import TEST_DATA_PATH, CONFIG_PATH
+from handlers.config_handler import load_config
+from settings import TEST_DATA_PATH
 from main import handle_get
 
 XML_FILEPATH = str(TEST_DATA_PATH.joinpath('published_video.xml'))
 
-if os.path.isfile(CONFIG_PATH):
-    with open(CONFIG_PATH, 'r') as f:
-        CONFIG = json.load(f)
-else:
-    CONFIG = {
-        "bind_port": 5015,
-        "bind_host": "0.0.0.0",
-        "debug_flask": False,
-        "require_verification_token": True,
-        "verification_token": "Test1234",
-        "require_hmac_authentication": False,
-        "hmac_secret": "Test1234",
-        "increase_kind_precision": False
-    }
+config = load_config()
 
 
 class FakeGetRequest:
@@ -57,7 +45,7 @@ class TestSubscriptionRequest(unittest.TestCase):
             args=ImmutableMultiDict(
                 [('hub.topic', 'https://www.youtube.com/xml/feeds/videos.xml?channel_id=UCLozjflf3i84bu_2jLTK2rA'),
                  ('hub.challenge', '3613557208738996482'), ('hub.mode', 'subscribe'), ('hub.lease_seconds', '432000'),
-                 ('hub.verify_token', CONFIG["verification_token"])])
+                 ('hub.verify_token', config["verification_token"])])
         )
 
         handle_get(req)
@@ -82,7 +70,7 @@ class TestSubscriptionRequest(unittest.TestCase):
             args=ImmutableMultiDict(
                 [('hub.topic', 'https://www.youtube.com/xml/feeds/videos.xml?channel_id=UCLozjflf3i84bu_2jLTK2rA'),
                  ('hub.challenge', '17674212813144385002'), ('hub.mode', 'unsubscribe'),
-                 ('hub.verify_token', CONFIG["verification_token"])])
+                 ('hub.verify_token', config["verification_token"])])
         )
 
         handle_get(req)

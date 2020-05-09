@@ -6,7 +6,7 @@ from bs4 import BeautifulSoup
 from database import init_db
 from main import handle_deleted_entry, console_log
 from utils import pp_dict
-from globals import TEST_DATA_PATH
+from settings import TEST_DATA_PATH
 
 XML_FILEPATH = str(TEST_DATA_PATH.joinpath('deleted_entry.xml'))
 
