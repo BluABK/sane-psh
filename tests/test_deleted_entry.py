@@ -9,7 +9,7 @@ from tests.setup import apply_test_settings
 from handlers.log_handler import create_logger
 
 from database import init_db
-from main import handle_deleted_entry, console_log
+from main import handle_deleted_entry, log_all_info
 import settings
 
 XML_FILEPATH = str(settings.TEST_DATA_PATH.joinpath('deleted_entry.xml'))
@@ -50,7 +50,7 @@ class TestDeletedEntry(unittest.TestCase):
         }
 
         test_result = handle_deleted_entry(xml)
-        console_log("Deleted: {video_id}".format(video_id=test_result["deleted_entry"]["ref"].split(':')[-1]))
+        log_all_info("Deleted: {video_id}".format(video_id=test_result["deleted_entry"]["ref"].split(':')[-1]))
 
         self.assert_dict(test_result, expected_result)
 

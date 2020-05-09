@@ -12,7 +12,7 @@ from database.models.video import Video
 import settings
 from database import init_db
 from database.operations import del_row_by_filter, row_exists
-from main import handle_video, console_log_handled_video
+from main import handle_video, log_all_info, handled_video_to_string
 
 XML_FILEPATH = str(settings.TEST_DATA_PATH.joinpath('published_video.xml'))
 
@@ -73,7 +73,7 @@ class TestPublishedVideo(unittest.TestCase):
              }
 
         test_result = handle_video(xml)
-        console_log_handled_video(test_result)
+        log_all_info(handled_video_to_string(test_result))
 
         self.assert_dict(test_result, expected_result)
 
