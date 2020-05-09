@@ -9,6 +9,7 @@ DEFAULT_CONFIG = {
     "bind_port": 5015,
     "bind_host": "0.0.0.0",
     "debug_flask": False,
+    "flask_log_level": 0,
     "require_verification_token": False,
     "verification_token": "",
     "require_hmac_authentication": False,
