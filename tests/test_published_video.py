@@ -40,6 +40,8 @@ class TestPublishedVideo(unittest.TestCase):
             print("WARNING: Test environment/DB seems unclean!")
 
     def test_published_video(self):
+        self.delete_video_if_exist()
+
         with open(XML_FILEPATH, 'r') as f:
             xml = BeautifulSoup(f.read(), "lxml")
             # xml = BeautifulSoup(f.read(), features="xml")
