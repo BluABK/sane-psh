@@ -22,10 +22,6 @@ class TestConfigHandler(unittest.TestCase):
         with open(settings.TEST_CONFIG_FILE_PATH, 'r') as f:
             self.test_config_json = json.load(f)
 
-            print("Travis CI Debug:")
-            print("self.config: \n{}".format(self.config))
-            print("self.test_config_json: \n{}".format(json.dumps(self.test_config_json, indent=4)))
-            print("DEFAULT_CONFIG: \n{}".format(DEFAULT_CONFIG))
             for key, value in self.test_config_json.items():
                 if key in DEFAULT_CONFIG:
                     # Make sure the changed options actually differ from default.
