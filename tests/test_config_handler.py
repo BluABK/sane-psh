@@ -3,9 +3,14 @@ import unittest
 
 from handlers.config_handler import load_config, DEFAULT_CONFIG
 import settings
+from handlers.log_handler import create_logger
 
 
 class TestConfigHandler(unittest.TestCase):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+        self.log = create_logger(__name__)
 
     def assert_dict(self, test_dict, correct_dict):
         self.assertEqual(len(test_dict), len(correct_dict))

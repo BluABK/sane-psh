@@ -1,3 +1,4 @@
+import sys
 import os
 import json
 import re
@@ -14,6 +15,7 @@ from database import init_db
 from database.models.channel import Channel
 from database.models.video import Video
 from database.operations import add_row, row_exists, update_channel, update_video, del_row_by_filter
+from handlers.log_handler import create_logger
 from utils import datetime_ns_to_ms, dict_to_pretty_string
 from handlers.config_handler import load_config, has_option
 from settings import API_BASEROUTE, API_VERSION
@@ -21,6 +23,8 @@ from settings import API_BASEROUTE, API_VERSION
 VIDEO_ID_HISTORY = []
 
 config = load_config()
+
+log = create_logger(__name__)
 
 # Set up Flask.
 flask_log = logging.getLogger('werkzeug')
@@ -68,10 +72,8 @@ def handle_get(req, callback=None):
     else:
         lease_seconds = ""
 
-    print("topic: {}\n"
-          "challenge: {}\n"
-          "mode: {}\n"
-          "lease_seconds: {}".format(topic, challenge, mode, lease_seconds))
+    log.info("New GET Request: topic: {}, challenge: {}, mode: {}, lease_seconds: {}".format(
+        topic, challenge, mode, lease_seconds))
 
     # Add to database if not exist, else update existing.
     if not row_exists(Channel, channel_id=channel_id):
@@ -190,52 +192,52 @@ def handle_video(xml, callback=None):
     return result
 
 
-def dump_request(debug_str):
-    datetime_stamp = datetime.datetime.now(timezone.utc).isoformat().replace(':', '-').replace('T', '_')
-
-    with open('requests.txt'.format(datetime_stamp), 'a') as f:
-        f.write(debug_str + '\n')
-
-
-def console_log(s):
+def console_log(s, **kwargs):
     datetime_stamp_human_readable = datetime.datetime.now(timezone.utc).isoformat().replace('T', ' ').split('+')[0]
-    print("[{dt}] {data}".format(dt=datetime_stamp_human_readable, data=s))
+    print("[{dt}] {data}".format(dt=datetime_stamp_human_readable, data=s), **kwargs)
 
 
-def console_log_handled_video(d):
+def log_all_info(s):
+    log.info(s)
+    console_log(s)
+
+
+def log_all_error(s):
+    log.error(s)
+    console_log(s, file=sys.stderr)
+
+
+def handled_video_to_string(d):
     entry = d["entry"]
     channel_title = entry["channel_title"]
     video_title = entry["video_title"]
 
     url = entry["links"][0]["href"]
 
-    console_log("{publish_kind} [{url}] {channel_title} - {video_title}".format(
+    return "{publish_kind} [{url}] {channel_title} - {video_title}".format(
         publish_kind="{}:".format(entry["kind"]).upper().ljust(7), channel_title=channel_title,
-        video_title=video_title, url=url))
+        video_title=video_title, url=url)
 
 
 @app.route('{}/notifications'.format(API_BASEROUTE), methods=['GET', 'POST'])
 def psh():
     datetime_stamp = datetime.datetime.now(timezone.utc).isoformat().replace(':', '-').replace('T', '_')
-    datetime_stamp_human_readable = datetime.datetime.now(
-        timezone.utc).isoformat().replace('T', ' ').split('+')[0].split('.')[0]
-    debug_str = ""
     retv = ''
-    indent = 4 * ' '
-    debug_str += "[{dt}] NEW {method} REQUEST: \n".format(dt=datetime_stamp_human_readable, method=request.method)
-    debug_str += "{indent}REQ-PATH: {}\n".format(request.path, indent=indent)
 
-    debug_str += "{indent}HEADERS: ".format(indent=indent)
-    for key, value in request.headers.items():
-        debug_str += "{indent}{key}: {value}\n".format(key=key, value=value, indent=indent+indent)
-    if len(request.args) > 0:
-        debug_str += "{indent}ARGS: {}\n".format(request.args, indent=indent)
-    if request.data is not None:
-        debug_str += "{indent}DATA: \n{indent}{indent}{data}\n".format(data=request.data, indent=indent)
-    if len(request.form) > 0:
-        debug_str += "{indent}FORM: {}\n".format(request.form, indent=indent)
-    if request.json is not None:
-        debug_str += "{indent}JSON: {}\n".format(request.json, indent=indent)
+    req_info = {
+        "path": request.path,
+        "headers": {k: v for k, v in request.headers.items()},
+        "args": request.args,
+        "data": request.data.decode("utf-8"),
+        "form": request.form,
+        "json": request.json}
+
+    log.info("{method} {path} ({cnt_type}) {from_hdr}\n{req_info}".format(
+        method=request.method,
+        path=req_info["path"],
+        from_hdr="From: {}".format(req_info["headers"]["From"]) if "From" in req_info["headers"] else "",
+        cnt_type=req_info["headers"]["Content-Type"],
+        req_info=json.dumps(req_info, indent=4)))
 
     if request.method == 'POST':
         # Verify HMAC authentication, if specified in config.
@@ -243,24 +245,19 @@ def psh():
             if 'X-Hub-Signature' in request.headers:
                 signature = hmac.new(str.encode(config["hmac_secret"]), request.data, hashlib.sha1).hexdigest()
                 if "sha1={}".format(signature) != request.headers['X-Hub-Signature']:
-                    console_log("ERROR: HMAC Signature mismatch! ({theirs} != {ours})".format(
+                    log_all_error("ERROR: HMAC Signature mismatch! ({theirs} != {ours})".format(
                         theirs=request.headers['X-Hub-Signature'], ours=signature))
-                    debug_str += "ERROR: HMAC Signature mismatch! ({theirs} != {ours})\n".format(
-                        theirs=request.headers['X-Hub-Signature'], ours=signature)
-                    dump_request(debug_str)
-                    return "ERROR: HMAC Signature mismatch!"
 
-                debug_str += "Valid Signature!\n"
+                    return "ERROR: HMAC Signature mismatch!"
             else:
-                console_log("ERROR: POST Request is missing required HMAC authentication (X-Hub-Signature) header!")
-                debug_str += "ERROR: POST Request is missing required HMAC authentication (X-Hub-Signature) header!\n"
-                dump_request(debug_str)
+                log_all_error("ERROR: POST Request is missing required HMAC authentication (X-Hub-Signature) header!")
+
                 return "ERROR: POST Request is missing required HMAC authentication (X-Hub-Signature) header!"
 
         # xml = BeautifulSoup(request.data, features="xml")  # Doesn't standardise tag casing
         xml = BeautifulSoup(request.data, "lxml")  # Standardises tag casing
 
-        # print(xml.feed.prettify())
+        log.debug("XML/Atom feed\n{}".format(xml.feed.prettify()))
         if not os.path.isdir('request_cache'):
             os.mkdir('request_cache')
         with open('request_cache/post_request_at_{}.xml'.format(datetime_stamp), 'w') as f:
@@ -269,23 +266,23 @@ def psh():
         if xml.feed.find('at:deleted-entry'):
             d = handle_deleted_entry(xml)
             if d is not None:
-                debug_str += dict_to_pretty_string(d)
+                log.info("Deleted entry: \n{}".format(json.dumps(d, indent=4)))
 
                 console_log("DELETE: {video_id}".format(video_id=d["deleted_entry"]["ref"].split(':')[-1]))
         else:
             if xml.feed.title.string == "YouTube video feed":
                 d = handle_video(xml)
                 if d is not None:
-                    debug_str += dict_to_pretty_string(d)
+                    log.info("YouTube video: {vid_str}\n{obj}".format(
+                        vid_str=handled_video_to_string(d),
+                        obj=json.dumps(d, indent=4)))
 
-                    console_log_handled_video(d)
+                    # Print one-line result to console.
+                    console_log(handled_video_to_string(d))
             else:
-                console_log("ERROR: Got unexpected feed type, aborting!")
-                debug_str += "ERROR: Got unexpected feed type, aborting!\n"
-                dump_request(debug_str)
-                return "ERROR: Got unexpected feed type, aborting!"
+                log_all_error("ERROR: Got unexpected feed type, aborting!")
 
-        dump_request(debug_str)
+                return "ERROR: Got unexpected feed type, aborting!"
 
     if request.method == 'GET':
         retv = handle_get(request)
@@ -294,7 +291,7 @@ def psh():
 
 
 if __name__ == "__main__":
-    print("Sane-PSH: Started.")
+    log.info("Sane-PSH: Started.")
     init_db()
 
     app.run(host=config["bind_host"], port=config["bind_port"], debug=config["debug_flask"])

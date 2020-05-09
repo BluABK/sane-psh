@@ -9,6 +9,8 @@ from werkzeug.datastructures import ImmutableMultiDict
 # noinspection PyUnresolvedReferences
 from tests.setup import apply_test_settings
 
+
+from handlers.log_handler import create_logger
 from database import init_db
 from database.operations import get_channel
 from handlers.config_handler import CONFIG
@@ -17,14 +19,19 @@ from main import handle_get
 
 XML_FILEPATH = str(settings.TEST_DATA_PATH.joinpath('published_video.xml'))
 
+
 class FakeGetRequest:
     def __init__(self, args: ImmutableMultiDict):
         self.args = args
 
 
 class TestSubscriptionRequest(unittest.TestCase):
-    cb_dict = {}
-    channel_id = "UCLozjflf3i84bu_2jLTK2rA"
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+        self.log = create_logger(__name__)
+        self.cb_dict = {}
+        self.channel_id = "UCLozjflf3i84bu_2jLTK2rA"
 
     def assert_dict(self, test_dict, correct_dict):
         self.assertEqual(len(test_dict), len(correct_dict))

@@ -1,4 +1,9 @@
 {
+    "log_level": 40,
+    "log_to_file": true,
+    "log_dir": "/home/bluabk/PycharmProjects/sane-psh-listener/logs",
+    "log_bind_port": 19994,
+    "log_bind_host": "127.0.0.1",
     "bind_port": 5015,
     "bind_host": "0.0.0.0",
     "debug_flask": false,

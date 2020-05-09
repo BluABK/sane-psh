@@ -6,6 +6,8 @@ from bs4 import BeautifulSoup
 # noinspection PyUnresolvedReferences
 from tests.setup import apply_test_settings
 
+from handlers.log_handler import create_logger
+
 from database import init_db
 from main import handle_deleted_entry, console_log
 import settings
@@ -14,7 +16,11 @@ XML_FILEPATH = str(settings.TEST_DATA_PATH.joinpath('deleted_entry.xml'))
 
 
 class TestDeletedEntry(unittest.TestCase):
-    cb_dict = {}
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+        self.log = create_logger(__name__)
+        self.cb_dict = {}
 
     def assert_dict(self, test_dict, correct_dict):
         self.assertEqual(len(test_dict), len(correct_dict))

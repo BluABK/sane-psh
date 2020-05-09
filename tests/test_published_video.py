@@ -4,20 +4,26 @@ from bs4 import BeautifulSoup
 
 # NB: This *MUST* be imported before any database modules, else config overrides fail.
 # noinspection PyUnresolvedReferences
-from database.models.video import Video
 from tests.setup import apply_test_settings
 
+
+from handlers.log_handler import create_logger
+from database.models.video import Video
+import settings
 from database import init_db
 from database.operations import del_row_by_filter, row_exists
-import settings
 from main import handle_video, console_log_handled_video
 
 XML_FILEPATH = str(settings.TEST_DATA_PATH.joinpath('published_video.xml'))
 
 
 class TestPublishedVideo(unittest.TestCase):
-    cb_dict = {}
-    video_id = "qX0wVo5GE6A"
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+        self.log = create_logger(__name__)
+        self.video_id = "qX0wVo5GE6A"
+        self.cb_dict = {}
 
     def assert_dict(self, test_dict, correct_dict):
         self.assertEqual(len(test_dict), len(correct_dict))
@@ -36,8 +42,8 @@ class TestPublishedVideo(unittest.TestCase):
         if row_exists(Video, video_id=self.video_id):
             # Delete video from DB as it was deleted on YouTube's end.
             del_row_by_filter(Video, video_id=self.video_id)
-            print("WARNING: Deleted existing video entry for: {}.".format(self.video_id))
-            print("WARNING: Test environment/DB seems unclean!")
+            self.log.warning("Deleted existing video entry for: {}.".format(self.video_id))
+            self.log.warning("Test environment/DB seems unclean!")
 
     def test_published_video(self):
         self.delete_video_if_exist()

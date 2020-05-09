@@ -7,6 +7,8 @@ DATABASE_FILENAME = 'sane-psh.db'
 DATABASE_PATH = PROJECT_ROOT_DIR.joinpath(DATABASE_FILENAME)
 CONFIG_PATH = PROJECT_ROOT_DIR.joinpath('config.json')
 SAMPLE_CONFIG_PATH = PROJECT_ROOT_DIR.joinpath('config.json.sample')
+LOG_DIR = PROJECT_ROOT_DIR.joinpath('logs')
+LOG_FILE = LOG_DIR.joinpath('sane-psh.log')
 
 API_VERSION = 1
 API_BASEROUTE = '/api'

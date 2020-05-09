@@ -1,4 +1,7 @@
 {
+    "log_level": 10,
+    "log_to_file": false,
+    "log_bind_host": "0.0.0.0",
     "bind_port": 5016,
     "new_option": "new_value"
 }

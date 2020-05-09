@@ -1,16 +1,21 @@
 from sqlalchemy import create_engine
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker, scoped_session
+
+from handlers.log_handler import create_logger
 from settings import DATABASE_PATH
 from handlers.config_handler import CONFIG
 
 SQLITE_ABS_PATH_BASE_URI = "sqlite:////"
 config = CONFIG
+log = create_logger(__name__)
 
 if 'custom_db_path' in config:
     db_path = config["custom_db_path"]
 else:
     db_path = '{}{}'.format(SQLITE_ABS_PATH_BASE_URI, DATABASE_PATH)
+
+log.info("Database path: {}".format(db_path))
 
 # Create a database engine.
 engine = create_engine(db_path)

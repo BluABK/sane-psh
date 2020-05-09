@@ -2,10 +2,15 @@ import copy
 import json
 import os
 
-from settings import CONFIG_PATH, SAMPLE_CONFIG_PATH
+from settings import CONFIG_PATH, SAMPLE_CONFIG_PATH, LOG_DIR
 
 # Default configuration (Use custom config.json to override its contents)
 DEFAULT_CONFIG = {
+    "log_level": 40,
+    "log_to_file": True,
+    "log_dir": str(LOG_DIR),
+    "log_bind_port": 19994,
+    "log_bind_host": "127.0.0.1",
     "bind_port": 5015,
     "bind_host": "0.0.0.0",
     "debug_flask": False,
@@ -26,6 +31,13 @@ def has_option(cfg: json, cfg_key: str):
         return True
 
     return False
+
+
+def get_option(key, default=None):
+    if key in CONFIG:
+        return CONFIG[key]
+    else:
+        return default
 
 
 def has_custom_config(config_file=CONFIG_PATH):
