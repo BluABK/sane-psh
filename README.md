@@ -7,11 +7,14 @@
 
 
 ## How to Use
+###### (Recommended: Check out [YouTube's official guide](https://developers.google.com/youtube/v3/guides/push_notifications).)
+
 1. Install on a server that is internet accessible.
-2. Follow [YouTube's official guide](https://developers.google.com/youtube/v3/guides/push_notifications):
-    * Callback URL:  http://<domain.tld>/api/notifications
-    * Topic: https://www.youtube.com/xml/feeds/videos.xml?channel_id=CHANNEL_ID
-    * Verify type: Synchronous
+2. Set the following required config options in `config.json`:
+    * notifications_callback (e.g. `http://example.com/api/notifications`).
+3. Start the server (e.g. `python3 main.py`).
+4. Make a subscription request to the API:
+    * cURL example: `curl -X POST http://example.com/api/subscribe?id=CHANNEL_ID`
 
 ## "PubSubHubbub"?
 **[PubSubHubbub](https://github.com/pubsubhubbub/PubSubHubbub)** is an open protocol for distributed publish/subscribe communication on the Internet. It generalizes the concept of webhooks and allows data producers and data consumers to work in a decoupled way.
