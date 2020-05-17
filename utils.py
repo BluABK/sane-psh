@@ -1,3 +1,29 @@
+import sys
+import os
+import json
+import datetime
+from datetime import timezone
+
+from handlers.log_handler import create_logger
+
+log = create_logger(__name__)
+
+
+def console_log(s, **kwargs):
+    datetime_stamp_human_readable = datetime.datetime.now(timezone.utc).isoformat().replace('T', ' ').split('+')[0]
+    print("[{dt}] {data}".format(dt=datetime_stamp_human_readable, data=s), **kwargs)
+
+
+def log_all_info(s):
+    log.info(s)
+    console_log(s)
+
+
+def log_all_error(s):
+    log.error(s)
+    console_log(s, file=sys.stderr)
+
+
 def list_item_types_equal(li: list, t: type):
     for item in li:
         if type(item) is not t:
@@ -68,3 +94,11 @@ def datetime_ns_to_ms(dt):
     ms = rhs.split('+')[0][:6]
 
     return "{}+{}".format(".".join([lhs, ms]), offset)
+
+
+def check_required_args(request_args: list, required_keys: list):
+    for key in required_keys:
+        if key not in request_args:
+            return {"result": False, "arg": key}
+
+    return {"result": True, "arg": None}

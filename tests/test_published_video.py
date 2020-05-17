@@ -12,7 +12,8 @@ from database.models.video import Video
 import settings
 from database import init_db
 from database.operations import del_row_by_filter, row_exists
-from main import handle_video, log_all_info, handled_video_to_string
+from api.routes.notifications import handle_video, handled_video_to_string
+from utils import log_all_info
 
 XML_FILEPATH = str(settings.TEST_DATA_PATH.joinpath('published_video.xml'))
 

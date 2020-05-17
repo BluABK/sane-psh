@@ -15,7 +15,7 @@ from database import init_db
 from database.operations import get_channel
 from handlers.config_handler import CONFIG
 import settings
-from main import handle_get
+from api.routes.notifications import handle_get
 
 XML_FILEPATH = str(settings.TEST_DATA_PATH.joinpath('published_video.xml'))
 

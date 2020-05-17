@@ -9,7 +9,8 @@ from tests.setup import apply_test_settings
 from handlers.log_handler import create_logger
 
 from database import init_db
-from main import handle_deleted_entry, log_all_info
+from utils import log_all_info
+from api.routes.notifications import handle_deleted_entry
 import settings
 
 XML_FILEPATH = str(settings.TEST_DATA_PATH.joinpath('deleted_entry.xml'))
