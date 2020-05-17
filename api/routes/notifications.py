@@ -11,7 +11,7 @@ from flask import make_response, request
 from handlers.log_handler import create_logger
 from settings import API_BASEROUTE, API_VERSION
 from handlers.config_handler import CONFIG, has_option
-from utils import log_all_error, check_required_args, console_log
+from utils import log_all_error, check_required_args, console_log, log_request
 from database.models.channel import Channel
 from database.models.video import Video
 from database.operations import add_row, row_exists, update_channel, update_video, del_row_by_filter
@@ -64,6 +64,7 @@ def handle_get(req, callback=None):
         update_channel(channel_id, subscribed=(mode == "subscribe"),
                        hmac_secret=hmac_secret)
 
+    log.info("Returning challenge value: {challenge}.".format(challenge=challenge))
     return challenge
 
 
@@ -190,24 +191,11 @@ def psh():
     datetime_stamp = datetime.datetime.now(timezone.utc).isoformat().replace(':', '-').replace('T', '_')
     retv = ''
 
-    req_info = {
-        "path": request.path,
-        "headers": {k: v for k, v in request.headers.items()},
-        "args": request.args,
-        "data": request.data.decode("utf-8"),
-        "form": request.form,
-        "json": request.json}
-
-    log.info("{method} {path} ({cnt_type}) {from_hdr}\n{req_info}".format(
-        method=request.method,
-        path=req_info["path"],
-        from_hdr="From: {}".format(req_info["headers"]["From"]) if "From" in req_info["headers"] else "",
-        cnt_type="({})".format(req_info["headers"]["Content-Type"]) if "Content-Type" in req_info["headers"] else "",
-        req_info=json.dumps(req_info, indent=4)))
+    log_request(request)
 
     if request.method == 'POST':
         # Verify HMAC authentication, if specified in config.
-        if CONFIG["require_hmac_authentication"]:
+        if CONFIG["require_hmac_authentication"] is True:
             if 'X-Hub-Signature' in request.headers:
                 signature = hmac.new(str.encode(CONFIG["hmac_secret"]), request.data, hashlib.sha1).hexdigest()
                 if "sha1={}".format(signature) != request.headers['X-Hub-Signature']:

@@ -102,3 +102,20 @@ def check_required_args(request_args: list, required_keys: list):
             return {"result": False, "arg": key}
 
     return {"result": True, "arg": None}
+
+
+def log_request(request, logger=log.info):
+    req_info = {
+        "path": request.path,
+        "headers": {k: v for k, v in request.headers.items()},
+        "args": request.args,
+        "data": request.data.decode("utf-8"),
+        "form": request.form,
+        "json": request.json}
+
+    logger("Request: {method} {path} (Content-Type: '{cnt_type}') {from_hdr}\n{req_info}".format(
+        method=request.method,
+        path=req_info["path"],
+        from_hdr="From: {}".format(req_info["headers"]["From"]) if "From" in req_info["headers"] else "",
+        cnt_type="({})".format(req_info["headers"]["Content-Type"]) if "Content-Type" in req_info["headers"] else "",
+        req_info=json.dumps(req_info, indent=4)))
