@@ -17,6 +17,9 @@ def make_hub_subscription_request(channel_id, mode):
     https://pubsubhubbub.github.io/PubSubHubbub/pubsubhubbub-core-0.4.html#rfc.section.5.1
     :return:
     """
+    if CONFIG["notifications_callback"] == "":
+        raise ValueError("Required config option 'notifications_callback' has been left blank!")
+
     # Set (required) headers.
     headers = {
         "Content-Type": "application/x-www-form-urlencoded"
@@ -62,14 +65,18 @@ def subscribe():
         channel_ids = request.args.getlist('id')[0].split(',')
         log.info("Subscribe to channel IDs: {}".format(channel_ids))
         for channel_id in channel_ids:
-            req = make_hub_subscription_request(channel_id, "subscribe")
-            # The hub MUST respond to a subscription request with an HTTP [RFC2616] 202 "Accepted" response
-            # to indicate that the request was received and will now be verified (Section 5.3) and validated
-            # (Section 5.2) by the hub
-            if req.status_code != 202:
-                err_msg = "Hub Error: Expected status code: 202, got: {wrong_code}.".format(wrong_code=req.status_code)
-                log.error(err_msg)
-                return make_response(err_msg, 500)
+            try:
+                req = make_hub_subscription_request(channel_id, "subscribe")
+                # The hub MUST respond to a subscription request with an HTTP [RFC2616] 202 "Accepted" response
+                # to indicate that the request was received and will now be verified (Section 5.3) and validated
+                # (Section 5.2) by the hub
+                if req.status_code != 202:
+                    err_msg = "Hub Error: Expected status code: 202, got: {wrong_code}.".format(wrong_code=req.status_code)
+                    log.error(err_msg)
+                    return make_response(err_msg, 500)
+            except Exception as exc:
+                log.exception(exc)
+                return make_response(str(exc), 500)
 
         log.info("Subscription request processed for channel IDs: {}".format(channel_ids))
         return jsonify(channel_ids)
@@ -84,14 +91,18 @@ def unsubscribe():
         channel_ids = request.args.getlist('id')[0].split(',')
         log.info("Unsubscribe from channel IDs: {}".format(channel_ids))
         for channel_id in channel_ids:
-            req = make_hub_subscription_request(channel_id, "unsubscribe")
-            # The hub MUST respond to a subscription request with an HTTP [RFC2616] 202 "Accepted" response
-            # to indicate that the request was received and will now be verified (Section 5.3) and validated
-            # (Section 5.2) by the hub
-            if req.status_code != 202:
-                err_msg = "Hub Error: Expected status code: 202, got: {wrong_code}.".format(wrong_code=req.status_code)
-                log.error(err_msg)
-                return make_response(err_msg, 500)
+            try:
+                req = make_hub_subscription_request(channel_id, "unsubscribe")
+                # The hub MUST respond to a subscription request with an HTTP [RFC2616] 202 "Accepted" response
+                # to indicate that the request was received and will now be verified (Section 5.3) and validated
+                # (Section 5.2) by the hub
+                if req.status_code != 202:
+                    err_msg = "Hub Error: Expected status code: 202, got: {wrong_code}.".format(wrong_code=req.status_code)
+                    log.error(err_msg)
+                    return make_response(err_msg, 500)
+            except Exception as exc:
+                log.exception(exc)
+                return make_response(str(exc), 500)
 
         log.info("Subscription request processed for channel IDs: {}".format(channel_ids))
         return jsonify(channel_ids)
