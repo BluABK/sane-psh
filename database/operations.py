@@ -3,9 +3,9 @@ from sqlalchemy.exc import SQLAlchemyError
 from database import db_session
 from database.models.channel import Channel
 from database.models.video import Video
-# from handlers.log_handler import create_logger
+from handlers.log_handler import create_logger
 
-# log = create_logger(__name__)
+log = create_logger(__name__)
 
 
 def row_exists(table_obj, **kwargs):
@@ -52,6 +52,28 @@ def get_channel(channel_id) -> dict:
         session.close()
 
     return channel_dict
+
+
+def get_channels() -> dict:
+    session = db_session()
+
+    try:
+        # Get all rows in Channel table.
+        channel_objs: dict = session.query(Channel).all()
+        channels_dict = {}
+        for channel in channel_objs:
+            channels_dict[channel.channel_id] = channel.as_dict()
+        log.debug("channels")
+        log.debug(channels_dict)
+
+        # Commit transaction (NB: makes detached instances expire)
+        session.commit()
+    except SQLAlchemyError:
+        raise
+    finally:
+        session.close()
+
+    return channels_dict
 
 
 def get_video(video_id) -> dict:

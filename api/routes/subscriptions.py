@@ -7,6 +7,7 @@ import datetime
 from handlers.config_handler import CONFIG
 from handlers.log_handler import create_logger
 from utils import log_request
+from database.operations import get_channels
 
 log = create_logger(__name__)
 
@@ -108,3 +109,14 @@ def unsubscribe():
         return jsonify(channel_ids)
 
     return make_response("Missing required argument: id", 400)
+
+
+def list_subscriptions():
+    subscriptions_list = get_channels()
+
+    log_request(request)
+
+    log.info("List subscriptions request processed")
+    log.debug(subscriptions_list)
+
+    return jsonify(subscriptions_list)
