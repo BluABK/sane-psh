@@ -2,7 +2,7 @@ import json
 import os
 import re
 import datetime
-from datetime import datetime, timezone
+from datetime import timezone
 from bs4 import BeautifulSoup
 import hmac
 import hashlib
@@ -49,9 +49,9 @@ def handle_get(req, callback=None):
     challenge = req.args["hub.challenge"]
     mode = req.args["hub.mode"]
     if 'hub.lease_seconds' in req.args:
-        lease_seconds = req.args["hub.lease_seconds"]
+        lease_seconds = float(req.args["hub.lease_seconds"])
     else:
-        lease_seconds = ""
+        lease_seconds = None
 
     log.info("New GET Request: topic: {}, challenge: {}, mode: {}, lease_seconds: {}".format(
         topic, challenge, mode, lease_seconds))
@@ -59,12 +59,12 @@ def handle_get(req, callback=None):
     # Add to database if not exist, else update existing.
     if not row_exists(Channel, channel_id=channel_id):
         add_row(Channel(channel_id=channel_id, subscribed=bool(mode == "subscribe"),
-                        expires_on=datetime.fromtimestamp(datetime.now().timestamp() + lease_seconds)
+                        expires_on=datetime.datetime.fromtimestamp(datetime.datetime.now().timestamp() + lease_seconds)
                         )
                 )
     else:
         update_channel(channel_id, subscribed=(mode == "subscribe"),
-                       expires_on=datetime.fromtimestamp(datetime.now().timestamp() + lease_seconds)
+                       expires_on=datetime.datetime.fromtimestamp(datetime.datetime.now().timestamp() + lease_seconds)
                        )
 
     log.info("Returning challenge value: {challenge}.".format(challenge=challenge))
