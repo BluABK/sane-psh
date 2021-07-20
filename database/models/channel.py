@@ -19,14 +19,14 @@ class Channel(Base):
     # DB entry last modified date.
     last_modified = Column(DateTime)
     subscribed = Column(Boolean)
-    hmac_secret = Column(VARCHAR)
+    expires_on = Column(DateTime)
 
-    def __init__(self, channel_id, channel_title=None, added_on=None, subscribed=True, hmac_secret=None):
+    def __init__(self, channel_id, channel_title=None, added_on=None, subscribed=True, expires_on=None):
         self.channel_id = channel_id
         self.channel_title = channel_title  # NB: Likely always None on init.
         self.added_on = added_on if added_on is not None else datetime.now(timezone.utc)
         self.subscribed = subscribed
-        self.hmac_secret = hmac_secret
+        self.expires_on = expires_on
         self.update_last_modified()
 
     def __repr__(self):
@@ -35,13 +35,13 @@ class Channel(Base):
                "added_on='{added_on}', " \
                "last_modified='{last_modified}', " \
                "subscribed='{subscribed}', " \
-               "hmac_secret='{hmac_secret}')>"\
+               "expires_on='{expires_on}')>"\
             .format(my_id=self.id,
                     channel_id=self.channel_id,
                     added_on=self.added_on,
                     last_modified=self.last_modified,
                     subscribed=bool(self.subscribed),
-                    hmac_secret=self.hmac_secret)
+                    expires_on=self.expires_on)
 
     def update_last_modified(self):
         self.last_modified = datetime.now(timezone.utc)
@@ -52,5 +52,5 @@ class Channel(Base):
             "added_on": self.added_on if not stringify_datetime else str(self.added_on),
             "last_modified": self.last_modified if not stringify_datetime else str(self.last_modified),
             "subscribed": bool(self.subscribed),
-            "hmac_secret": self.hmac_secret
+            "expires_on": self.expires_on if not stringify_datetime else str(self.expires_on)
         }

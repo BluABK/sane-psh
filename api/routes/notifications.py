@@ -2,7 +2,7 @@ import json
 import os
 import re
 import datetime
-from datetime import timezone
+from datetime import datetime, timezone
 from bs4 import BeautifulSoup
 import hmac
 import hashlib
@@ -59,10 +59,13 @@ def handle_get(req, callback=None):
     # Add to database if not exist, else update existing.
     if not row_exists(Channel, channel_id=channel_id):
         add_row(Channel(channel_id=channel_id, subscribed=bool(mode == "subscribe"),
-                        hmac_secret=hmac_secret))
+                        expires_on=datetime.fromtimestamp(datetime.now().timestamp() + lease_seconds)
+                        )
+                )
     else:
         update_channel(channel_id, subscribed=(mode == "subscribe"),
-                       hmac_secret=hmac_secret)
+                       expires_on=datetime.fromtimestamp(datetime.now().timestamp() + lease_seconds)
+                       )
 
     log.info("Returning challenge value: {challenge}.".format(challenge=challenge))
     return challenge
