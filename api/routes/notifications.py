@@ -51,7 +51,8 @@ def handle_get(req, callback=None):
     if 'hub.lease_seconds' in req.args:
         lease_seconds = float(req.args["hub.lease_seconds"])
     else:
-        lease_seconds = None
+        log.critical("lease_seconds missing! Setting 0.0")
+        lease_seconds = 0.0
 
     log.info("New GET Request: topic: {}, challenge: {}, mode: {}, lease_seconds: {}".format(
         topic, challenge, mode, lease_seconds))
