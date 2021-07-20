@@ -111,8 +111,8 @@ def unsubscribe():
     return make_response("Missing required argument: id", 400)
 
 
-def list_subscriptions():
-    subscriptions_list = get_channels()
+def list_subscriptions(stringify_datetime=True):
+    subscriptions_list = get_channels(stringify_datetime)
 
     log_request(request)
 

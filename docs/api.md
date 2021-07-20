@@ -142,19 +142,19 @@ Gets JSON list of current subscriptions.
 ### Example:
 ```json
 {
-  'UCzNWVDZQ55bjq8uILZ7_wyQ': {
-    'channel_id': 'UCzNWVDZQ55bjq8uILZ7_wyQ', 
-    'added_on': datetime.datetime(2021, 7, 19, 15, 28, 33, 651472), 
-    'last_modified': datetime.datetime(2021, 7, 19, 15, 40, 51, 849221), 
-    'subscribed': True, 
-    'hmac_secret': None
+  "UCzNWVDZQ55bjq8uILZ7_wyQ": {
+    "channel_id": "UCzNWVDZQ55bjq8uILZ7_wyQ", 
+    "added_on": "2021-07-20 13:18:39.762758", 
+    "last_modified": "2021-07-20 13:18:39.762758", 
+    "subscribed": true, 
+    "hmac_secret": null
   }, 
-  'UCWOA1ZGywLbqmigxE4Qlvuw': {
-    'channel_id': 'UCWOA1ZGywLbqmigxE4Qlvuw', 
-    'added_on': datetime.datetime(2021, 7, 20, 13, 18, 39, 762758), 
-    'last_modified': datetime.datetime(2021, 7, 20, 13, 18, 39, 763258), 
-    'subscribed': True, 
-    'hmac_secret': None
+  "UCWOA1ZGywLbqmigxE4Qlvuw": {
+    "channel_id": "UCWOA1ZGywLbqmigxE4Qlvuw", 
+    "added_on": "2021-07-19 15:28:33.651472", 
+    "last_modified": "2021-07-19 15:40:51.849221", 
+    "subscribed": true, 
+    "hmac_secret": null
   }
 }
 ```

@@ -46,11 +46,11 @@ class Channel(Base):
     def update_last_modified(self):
         self.last_modified = datetime.now(timezone.utc)
 
-    def as_dict(self):
+    def as_dict(self, stringify_datetime=False):
         return {
             "channel_id": self.channel_id,
-            "added_on": self.added_on,
-            "last_modified": self.last_modified,
+            "added_on": self.added_on if not stringify_datetime else str(self.added_on),
+            "last_modified": self.last_modified if not stringify_datetime else str(self.last_modified),
             "subscribed": bool(self.subscribed),
             "hmac_secret": self.hmac_secret
         }

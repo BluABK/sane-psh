@@ -54,7 +54,7 @@ def get_channel(channel_id) -> dict:
     return channel_dict
 
 
-def get_channels() -> dict:
+def get_channels(stringify_datetime=False) -> dict:
     session = db_session()
 
     try:
@@ -62,7 +62,7 @@ def get_channels() -> dict:
         channel_objs: dict = session.query(Channel).all()
         channels_dict = {}
         for channel in channel_objs:
-            channels_dict[channel.channel_id] = channel.as_dict()
+            channels_dict[channel.channel_id] = channel.as_dict(stringify_datetime)
         log.debug("channels")
         log.debug(channels_dict)
 
