@@ -41,32 +41,29 @@ def handle_get(req, callback=None):
     if not chk["result"]:
         return "ERROR: GET Request is missing required argument: {arg}".format(arg=chk["arg"])
 
-    verify_token = None
-    hmac_secret = None
+    verify_token = None  # FIXME: Unused!
+    hmac_secret = None   # FIXME: Unused!
     topic = req.args["hub.topic"]
     r = r'^https:\/\/www\.youtube\.com\/xml\/feeds\/videos\.xml\?channel_id=(.*)$'
     channel_id = re.match(r, topic).groups()[0]
     challenge = req.args["hub.challenge"]
     mode = req.args["hub.mode"]
+    lease_seconds = None
     if 'hub.lease_seconds' in req.args:
         lease_seconds = float(req.args["hub.lease_seconds"])
+        expires_on = datetime.datetime.fromtimestamp(datetime.datetime.now().timestamp() + lease_seconds)
     else:
-        log.critical("lease_seconds missing! Setting 0.0")
-        lease_seconds = 0.0
+        log.warning("lease_seconds missing! Setting None")
+        expires_on = None
 
     log.info("New GET Request: topic: {}, challenge: {}, mode: {}, lease_seconds: {}".format(
         topic, challenge, mode, lease_seconds))
 
     # Add to database if not exist, else update existing.
     if not row_exists(Channel, channel_id=channel_id):
-        add_row(Channel(channel_id=channel_id, subscribed=bool(mode == "subscribe"),
-                        expires_on=datetime.datetime.fromtimestamp(datetime.datetime.now().timestamp() + lease_seconds)
-                        )
-                )
+        add_row(Channel(channel_id=channel_id, subscribed=bool(mode == "subscribe"), expires_on=expires_on))
     else:
-        update_channel(channel_id, subscribed=(mode == "subscribe"),
-                       expires_on=datetime.datetime.fromtimestamp(datetime.datetime.now().timestamp() + lease_seconds)
-                       )
+        update_channel(channel_id, subscribed=(mode == "subscribe"), expires_on=expires_on)
 
     log.info("Returning challenge value: {challenge}.".format(challenge=challenge))
     return challenge
@@ -218,7 +215,7 @@ def psh():
         log.debug("XML/Atom feed\n{}".format(xml.feed.prettify()))
         if not os.path.isdir('request_cache'):
             os.mkdir('request_cache')
-        with open('request_cache/post_request_at_{}.xml'.format(datetime_stamp), 'w') as f:
+        with open('request_cache/post_request_at_{}.xml'.format(datetime_stamp), 'w', encoding="utf-8") as f:
             f.write(xml.decode('utf-8'))
 
         if xml.feed.find('at:deleted-entry'):

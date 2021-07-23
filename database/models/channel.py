@@ -26,7 +26,14 @@ class Channel(Base):
         self.channel_title = channel_title  # NB: Likely always None on init.
         self.added_on = added_on if added_on is not None else datetime.now(timezone.utc)
         self.subscribed = subscribed
-        self.expires_on = expires_on
+
+        if expires_on:
+            self.expires_on = expires_on
+        else:
+            # Only overwrite with None if not already set, to avoid losing an already valid one.
+            if not self.expires_on:
+                self.expires_on = None
+
         self.update_last_modified()
 
     def __repr__(self):
