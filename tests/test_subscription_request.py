@@ -46,7 +46,6 @@ class TestSubscriptionRequest(unittest.TestCase):
         expected_result = {
             "channel_id": self.channel_id,
             "subscribed": True,
-            "hmac_secret": None
         }
 
         req = FakeGetRequest(
@@ -61,8 +60,7 @@ class TestSubscriptionRequest(unittest.TestCase):
         test_result = get_channel(self.channel_id)
         relevant_test_results = {
             "channel_id": test_result["channel_id"],
-            "subscribed": test_result["subscribed"],
-            "hmac_secret": test_result["hmac_secret"]
+            "subscribed": test_result["subscribed"]
         }
 
         self.assert_dict(relevant_test_results, expected_result)
@@ -70,8 +68,7 @@ class TestSubscriptionRequest(unittest.TestCase):
     def test_unsubscribe_request(self):
         expected_result = {
             "channel_id": self.channel_id,
-            "subscribed": False,
-            "hmac_secret": None
+            "subscribed": False
         }
 
         req = FakeGetRequest(
@@ -86,8 +83,7 @@ class TestSubscriptionRequest(unittest.TestCase):
         test_result = get_channel(self.channel_id)
         relevant_test_results = {
             "channel_id": test_result["channel_id"],
-            "subscribed": test_result["subscribed"],
-            "hmac_secret": test_result["hmac_secret"]
+            "subscribed": test_result["subscribed"]
         }
 
         self.assert_dict(relevant_test_results, expected_result)
