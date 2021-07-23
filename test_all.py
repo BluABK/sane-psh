@@ -14,8 +14,6 @@ from tests.test_config_handler import TestConfigHandler
 
 is_travis = 'TRAVIS' in os.environ
 
-config = load_config()
-
 
 def suite():
     my_suite = unittest.TestSuite()
@@ -29,6 +27,7 @@ def suite():
 
 
 if __name__ == '__main__':
+    config = load_config()
     init_db()
     runner = unittest.TextTestRunner()
     runner.run(suite())
