@@ -1,3 +1,4 @@
+from typing import Union
 from sqlalchemy.exc import SQLAlchemyError
 
 from database import engine, db_session, Base
@@ -22,30 +23,6 @@ def db_is_empty():
 
     return is_empty
 
-
-def row_exists(table_obj: Base, **kwargs):
-    # Create a Session
-    session = db_session()
-    exists = None
-    try:
-        exists = session.query(table_obj.id).filter_by(**kwargs).scalar() is not None
-
-        session.commit()
-    except SQLAlchemyError:
-        session.rollback()
-        raise
-    finally:
-        session.close()
-        return exists
-
-
-# def drop_table(table_name, engine):
-#     Base = declarative_base()
-#     metadata = MetaData()
-#     metadata.reflect(bind=engine)
-#     table = metadata.tables[table_name]
-#     if table is not None:
-#         Base.metadata.drop_all(engine, [table], checkfirst=True)
 
 def wipe_table(table):
     # Create a Session
@@ -95,10 +72,13 @@ def add_row(db_row: Base):
 
 def get_channel(channel_id: str) -> dict:
     session = db_session()
+    channel_dict: Union[dict, None] = None
 
     try:
         # Get the first item in the list of queries.
-        channel_dict: dict = session.query(Channel).filter(Channel.channel_id == channel_id)[0].as_dict()
+        channel_record: Union[Channel, None] = session.query(Channel).filter(Channel.channel_id == channel_id).first()
+        if channel_record:
+            channel_dict = channel_record.as_dict()
 
         # Commit transaction (NB: makes detached instances expire)
         session.commit()
@@ -134,10 +114,12 @@ def get_channels(stringify_datetime: bool = False) -> dict:
 
 def get_video(video_id: str) -> dict:
     session = db_session()
-
+    video_dict: Union[dict, None] = None
     try:
         # Get the first item in the list of queries.
-        video_dict: dict = session.query(Video).filter(Video.video_id == video_id)[0].as_dict()
+        video_record: Union[Video, None] = session.query(Video).filter(Video.video_id == video_id).first()
+        if video_record:
+            video_dict = video_record.as_dict()
 
         # Commit transaction (NB: makes detached instances expire)
         session.commit()
@@ -149,30 +131,15 @@ def get_video(video_id: str) -> dict:
     return video_dict
 
 
-def del_row_by_filter(table_obj: Base, **kwargs):
-    """
-    Delete row filtered by provided kwarg and don’t synchronize the session.
-
-    This option is the most efficient and is reliable once the session is expired,
-    which typically occurs after a commit(), or explicitly using expire_all().
-
-    Before the expiration, objects may still remain in the session which were
-    in fact deleted which can lead to confusing results if they are accessed
-    via get() or already loaded collections.
-
-    https://www.kite.com/python/docs/sqlalchemy.orm.query.Query.delete
-    :param table_obj:
-    :param kwargs:
-    :return:
-    """
+def del_video_by_id(video_id: str):
     # Create a Session
     session = db_session()
     try:
-        rows = session.query(table_obj).filter_by(**kwargs)
-        rows.delete(synchronize_session=False)
+        session.query(Video).filter(Video.video_id == video_id).delete()
         session.commit()
     except SQLAlchemyError:
         session.rollback()
+        log.exception(SQLAlchemyError)
         raise
     finally:
         session.close()

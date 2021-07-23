@@ -8,20 +8,19 @@ from bs4 import BeautifulSoup
 # Setup tests (loads custom config, sets up DB etc..).
 # NB: This *MUST* be imported before any database modules, else config overrides fail.
 # noinspection PyUnresolvedReferences
+import tests.setup
 from database.models.video import Video
-from tests.setup import CONFIG
-from tests.test_utils import assert_dict, FEED_PUBLISHED_FMT, FEED_UPDATED_FMT
+from tests.test_utils import assert_dict, FEED_PUBLISHED_FMT, asserted_db_wipe
 
 from handlers.log_handler import create_logger
 
 from database import init_db
-from database.operations import db_is_empty, wipe_db, add_row, get_video, row_exists
-from utils import log_all_info, datetime_ns_to_ms
+from database.operations import db_is_empty, wipe_db, add_row, get_video
+from utils import log_all_info
 from api.routes.notifications import handle_deleted_entry
 import settings
 
 
-# CONFIG = tests.setup.CONFIG
 XML_FILEPATH = str(settings.TEST_DATA_PATH.joinpath('deleted_entry.xml'))
 
 
@@ -39,13 +38,14 @@ class TestDeletedEntry(unittest.TestCase):
         self.PUBLISHED_ON = datetime.datetime(2020, 5, 1, 16, 58, 14)
         self.UPDATED_ON = datetime.datetime(2020, 5, 1, 17, 4, 2, 426578)
 
-        self.log.critical(json.dumps(CONFIG, indent=4))
+    def setUp(self):
+        """Hook method for setting up the test fixture before exercising it."""
         # Setup DB
         init_db()
+
         # Wipe DB
-        self.assertTrue(wipe_db(), "DB successfully wiped.")
-        # Check that DB was wiped successfully.
-        self.assertTrue(db_is_empty(), "DB is empty.")
+        asserted_db_wipe(self)
+
         # Write video to DB.
         add_row(
             Video(video_id=self.VIDEO_ID,
@@ -80,6 +80,11 @@ class TestDeletedEntry(unittest.TestCase):
 
         # assert_dict(self, video, expected_video, "get_video returns dict that matches expected dict.")
 
+    def tearDown(self):
+        """Hook method for deconstructing the test fixture after testing it."""
+        # Wipe DB
+        asserted_db_wipe(self)
+
     def test_deleted_entry(self):
         with open(XML_FILEPATH, 'r') as f:
             xml = BeautifulSoup(f.read(), "lxml")
@@ -103,7 +108,5 @@ class TestDeletedEntry(unittest.TestCase):
 
         assert_dict(self, test_result, expected_result, "Handled kind:delete XML is as expected.")
 
+        self.assertIsNone(get_video(self.VIDEO_ID), "Assert that video was deleted from DB.")
 
-if __name__ == '__main__':
-    init_db()
-    unittest.main()

@@ -9,13 +9,12 @@ import hashlib
 from flask import make_response, request
 
 from handlers.log_handler import create_logger
-from settings import API_BASEROUTE, API_VERSION
-from handlers.config_handler import CONFIG, has_option
+from handlers.config_handler import CONFIG
 from utils import log_all_error, check_required_args, console_log, log_request
 from database.models.channel import Channel
 from database.models.video import Video
-from database.operations import add_row, row_exists, update_channel, update_video, del_row_by_filter
-from utils import datetime_ns_to_ms, dict_to_pretty_string
+from database.operations import add_row, update_channel, update_video, del_video_by_id, get_channel, get_video
+from utils import datetime_ns_to_ms
 
 log = create_logger(__name__)
 
@@ -60,7 +59,7 @@ def handle_get(req, callback=None):
         topic, challenge, mode, lease_seconds))
 
     # Add to database if not exist, else update existing.
-    if not row_exists(Channel, channel_id=channel_id):
+    if not get_channel(channel_id):
         add_row(Channel(channel_id=channel_id, subscribed=bool(mode == "subscribe"), expires_on=expires_on))
     else:
         update_channel(channel_id, subscribed=(mode == "subscribe"), expires_on=expires_on)
@@ -89,9 +88,10 @@ def handle_deleted_entry(xml, callback=None):
 
     video_id = deleted_entry['ref'].split(':')[-1]
 
-    if row_exists(Video, video_id=video_id):
+    if get_video(video_id):
         # Delete video from DB as it was deleted on YouTube's end.
-        del_row_by_filter(Video, video_id=video_id)
+        # del_row_by_filter(Video, video_id=video_id)
+        del_video_by_id(video_id=video_id)
 
     if callback is not None:
         callback(result)
@@ -124,7 +124,7 @@ def handle_video(xml, callback=None):
     updated_on = datetime.datetime.strptime(datetime_ns_to_ms(entry["updated"]), FEED_UPDATED_FMT)
 
     # Add to database if not exist, else update existing.
-    if not row_exists(Video, video_id=entry["video_id"]):
+    if not get_video(entry["video_id"]):
         # If there is more than two minutes time difference between publish and update,
         # the video is probably not freshly posted; treat it as an update.
         if updated_on.timestamp() - published_on.timestamp() > 120:
@@ -159,7 +159,7 @@ def handle_video(xml, callback=None):
             if entry["video_id"] not in VIDEO_ID_HISTORY:
                 VIDEO_ID_HISTORY.append(entry["video_id"])
 
-        if row_exists(Channel, channel_id=entry["channel_id"]):
+        if get_channel(entry["channel_id"]):
             # Update channel title (only included with a Video Atom feed).
             update_channel(entry["channel_id"], channel_title=entry["channel_title"])
 

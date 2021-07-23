@@ -82,7 +82,7 @@ def dict_to_pretty_string(d: dict, indent_lvl=0, indent_str='    ', suffix_last_
     return s
 
 
-def datetime_ns_to_ms(dt):
+def datetime_ns_to_ms(dt: str) -> str:
     """
     Converts a datetime with nanoseconds to a datetime with milliseconds.
 
@@ -94,6 +94,10 @@ def datetime_ns_to_ms(dt):
     ms = rhs.split('+')[0][:6]
 
     return "{}+{}".format(".".join([lhs, ms]), offset)
+
+
+def datetime_ns_to_ms_str(dt: str, fmt: str) -> str:
+    return datetime.datetime.strptime(datetime_ns_to_ms(dt), fmt).strftime(fmt)
 
 
 def check_required_args(request_args: list, required_keys: list):
