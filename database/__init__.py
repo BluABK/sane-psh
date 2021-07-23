@@ -21,7 +21,7 @@ log = create_logger(__name__)
 log.info("Init DB...")
 
 if 'custom_db_path' in config:
-    db_path = config["custom_db_path"]
+    db_path = "{}{}".format(SQLITE_ABS_PATH_BASE_URI, config["custom_db_path"])
 else:
     db_path = '{}{}'.format(SQLITE_ABS_PATH_BASE_URI, DATABASE_PATH)
 

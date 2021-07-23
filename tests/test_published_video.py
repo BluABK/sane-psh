@@ -4,7 +4,7 @@ from bs4 import BeautifulSoup
 
 # NB: This *MUST* be imported before any database modules, else config overrides fail.
 # noinspection PyUnresolvedReferences
-from tests.setup import apply_test_settings
+import tests.setup
 
 
 from handlers.log_handler import create_logger
@@ -15,6 +15,7 @@ from database.operations import del_row_by_filter, row_exists
 from api.routes.notifications import handle_video, handled_video_to_string
 from utils import log_all_info
 
+CONFIG = tests.setup.CONFIG
 XML_FILEPATH = str(settings.TEST_DATA_PATH.joinpath('published_video.xml'))
 
 

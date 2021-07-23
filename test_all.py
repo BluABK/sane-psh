@@ -3,7 +3,7 @@ import os
 
 # NB: This *MUST* be imported before any database modules, else config overrides fail.
 # noinspection PyUnresolvedReferences
-import tests.setup.apply_test_settings
+# import tests.setup # FIXME: Unused in runner itself?
 
 from database import init_db
 from handlers.config_handler import load_config

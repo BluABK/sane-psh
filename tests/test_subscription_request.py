@@ -7,16 +7,17 @@ from werkzeug.datastructures import ImmutableMultiDict
 
 # NB: This *MUST* be imported before any database modules, else config overrides fail.
 # noinspection PyUnresolvedReferences
-from tests.setup import apply_test_settings
+import tests.setup
 
 
 from handlers.log_handler import create_logger
 from database import init_db
 from database.operations import get_channel
-from handlers.config_handler import CONFIG
+# from handlers.config_handler import CONFIG
 import settings
 from api.routes.notifications import handle_get
 
+CONFIG = tests.setup.CONFIG
 XML_FILEPATH = str(settings.TEST_DATA_PATH.joinpath('published_video.xml'))
 
 

@@ -1,11 +1,26 @@
 from sqlalchemy.exc import SQLAlchemyError
 
-from database import db_session, Base
+from database import engine, db_session, Base
 from database.models.channel import Channel
 from database.models.video import Video
 from handlers.log_handler import create_logger
 
 log = create_logger(__name__)
+
+# List of all DB tables (used for sanity checks)
+TABLES = [Channel, Video]
+
+
+def db_is_empty():
+    # Create a Session
+    session = db_session()
+    is_empty = True
+    for table in TABLES:
+        if session.query(table).first() is not None:
+            log.info("DB is not empty: Query first() for table '{}' is not None.".format(table.__tablename__))
+            is_empty = False
+
+    return is_empty
 
 
 def row_exists(table_obj: Base, **kwargs):
@@ -22,6 +37,47 @@ def row_exists(table_obj: Base, **kwargs):
     finally:
         session.close()
         return exists
+
+
+# def drop_table(table_name, engine):
+#     Base = declarative_base()
+#     metadata = MetaData()
+#     metadata.reflect(bind=engine)
+#     table = metadata.tables[table_name]
+#     if table is not None:
+#         Base.metadata.drop_all(engine, [table], checkfirst=True)
+
+def wipe_table(table):
+    # Create a Session
+    session = db_session()
+
+    try:
+        session.query(table).delete()
+
+        session.commit()
+    except SQLAlchemyError:
+        session.rollback()
+        raise
+    finally:
+        session.close()
+        return True
+
+
+def wipe_db():
+    # Create a Session
+    session = db_session()
+
+    try:
+        for table in TABLES:
+            session.query(table).delete()
+
+        session.commit()
+    except SQLAlchemyError:
+        session.rollback()
+        raise
+    finally:
+        session.close()
+        return True
 
 
 def add_row(db_row: Base):
