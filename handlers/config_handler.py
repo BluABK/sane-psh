@@ -69,7 +69,7 @@ def load_config(config_file=CONFIG_PATH):
     global CONFIG
 
     # Create a sample config file.
-    update_sample_config()
+    # update_sample_config()
 
     # If config file doesn't exist
     if has_custom_config():
