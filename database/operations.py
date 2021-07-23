@@ -1,6 +1,6 @@
 from sqlalchemy.exc import SQLAlchemyError
 
-from database import db_session
+from database import db_session, Base
 from database.models.channel import Channel
 from database.models.video import Video
 from handlers.log_handler import create_logger
@@ -8,7 +8,7 @@ from handlers.log_handler import create_logger
 log = create_logger(__name__)
 
 
-def row_exists(table_obj, **kwargs):
+def row_exists(table_obj: Base, **kwargs):
     # Create a Session
     session = db_session()
     exists = None
@@ -24,7 +24,7 @@ def row_exists(table_obj, **kwargs):
         return exists
 
 
-def add_row(db_row):
+def add_row(db_row: Base):
     # Create a Session
     session = db_session()
     try:
@@ -37,7 +37,7 @@ def add_row(db_row):
         session.close()
 
 
-def get_channel(channel_id) -> dict:
+def get_channel(channel_id: str) -> dict:
     session = db_session()
 
     try:
@@ -54,7 +54,7 @@ def get_channel(channel_id) -> dict:
     return channel_dict
 
 
-def get_channels(stringify_datetime=False) -> dict:
+def get_channels(stringify_datetime: bool = False) -> dict:
     session = db_session()
 
     try:
@@ -76,7 +76,7 @@ def get_channels(stringify_datetime=False) -> dict:
     return channels_dict
 
 
-def get_video(video_id) -> dict:
+def get_video(video_id: str) -> dict:
     session = db_session()
 
     try:
@@ -93,11 +93,27 @@ def get_video(video_id) -> dict:
     return video_dict
 
 
-def del_row_by_filter(table_obj, **kwargs):
+def del_row_by_filter(table_obj: Base, **kwargs):
+    """
+    Delete row filtered by provided kwarg and don’t synchronize the session.
+
+    This option is the most efficient and is reliable once the session is expired,
+    which typically occurs after a commit(), or explicitly using expire_all().
+
+    Before the expiration, objects may still remain in the session which were
+    in fact deleted which can lead to confusing results if they are accessed
+    via get() or already loaded collections.
+
+    https://www.kite.com/python/docs/sqlalchemy.orm.query.Query.delete
+    :param table_obj:
+    :param kwargs:
+    :return:
+    """
     # Create a Session
     session = db_session()
     try:
-        session.query(table_obj.id).filter_by(**kwargs).delete()
+        rows = session.query(table_obj).filter_by(**kwargs)
+        rows.delete(synchronize_session=False)
         session.commit()
     except SQLAlchemyError:
         session.rollback()
