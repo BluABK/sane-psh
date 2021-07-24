@@ -1,27 +1,22 @@
-import json
-import os
-import pathlib
+import datetime
 import unittest
 
 from werkzeug.datastructures import ImmutableMultiDict
 
 # NB: This *MUST* be imported before any database modules, else config overrides fail.
-# noinspection PyUnresolvedReferences
 import tests.setup
-
+from database.models.channel import Channel
 
 from handlers.log_handler import create_logger
 from database import init_db
-from database.operations import get_channel
-# from handlers.config_handler import CONFIG
-import settings
+from database.operations import get_channel, add_row
 from api.routes.notifications import handle_get
+from tests.test_utils import assert_dict, asserted_db_wipe
 
 CONFIG = tests.setup.CONFIG
-XML_FILEPATH = str(settings.TEST_DATA_PATH.joinpath('published_video.xml'))
 
 
-class FakeGetRequest:
+class FakeGETRequest:
     def __init__(self, args: ImmutableMultiDict):
         self.args = args
 
@@ -32,64 +27,80 @@ class TestSubscriptionRequest(unittest.TestCase):
 
         self.log = create_logger(__name__)
         self.cb_dict = {}
-        self.channel_id = "UCLozjflf3i84bu_2jLTK2rA"
+        self.CHANNEL_ID = "UCLozjflf3i84bu_2jLTK2rA"
+        self.CHANNEL_TITLE = "BluABK~"
+        self.PUBLISHED_ON = datetime.datetime(2020, 5, 1, 17, 3, 45)
+        self.UPDATED_ON = datetime.datetime(2020, 5, 1, 17, 4, 2, 426578)
+        self.LEASE_SECONDS = 432000
 
-    def assert_dict(self, test_dict, correct_dict):
-        self.assertEqual(len(test_dict), len(correct_dict))
+    def setUp(self):
+        """Hook method for setting up the test fixture before exercising it."""
+        # Setup DB
+        init_db()
 
-        for key in test_dict:
-            if type(test_dict[key]) is dict:
-                self.assert_dict(test_dict[key], correct_dict[key])
-            else:
-                self.assertEqual(test_dict[key], correct_dict[key])
+        # Wipe DB
+        asserted_db_wipe(self)
+
+    def tearDown(self):
+        """Hook method for deconstructing the test fixture after testing it."""
+        # Wipe DB
+        asserted_db_wipe(self)
 
     def test_subscribe_request(self):
-        expected_result = {
-            "channel_id": self.channel_id,
+        expected = {
+            "channel_id": self.CHANNEL_ID,
             "subscribed": True,
         }
 
-        req = FakeGetRequest(
+        req = FakeGETRequest(
             args=ImmutableMultiDict(
-                [('hub.topic', 'https://www.youtube.com/xml/feeds/videos.xml?channel_id=UCLozjflf3i84bu_2jLTK2rA'),
-                 ('hub.challenge', '3613557208738996482'), ('hub.mode', 'subscribe'), ('hub.lease_seconds', '432000'),
-                 ('hub.verify_token', CONFIG["verification_token"])])
+                [
+                    ('hub.topic', 'https://www.youtube.com/xml/feeds/videos.xml?channel_id={}'.format(self.CHANNEL_ID)),
+                    ('hub.challenge', '3613557208738996482'),
+                    ('hub.mode', 'subscribe'),
+                    ('hub.lease_seconds', str(self.LEASE_SECONDS)),
+                    ('hub.verify_token', CONFIG["verification_token"])
+                 ]
+            )
         )
 
         handle_get(req)
 
-        test_result = get_channel(self.channel_id)
+        actual = get_channel(self.CHANNEL_ID)
         relevant_test_results = {
-            "channel_id": test_result["channel_id"],
-            "subscribed": test_result["subscribed"]
+            "channel_id": actual["channel_id"],
+            "subscribed": actual["subscribed"]
         }
 
-        self.assert_dict(relevant_test_results, expected_result)
+        assert_dict(self, expected, relevant_test_results)
 
     def test_unsubscribe_request(self):
-        expected_result = {
-            "channel_id": self.channel_id,
+        # Set up DB:
+        add_row(
+            Channel(channel_id=self.CHANNEL_ID,
+                    subscribed=True,
+                    expires_on=datetime.datetime.now() + datetime.timedelta(0, self.LEASE_SECONDS)
+                    )
+        )
+
+        expected = {
+            "channel_id": self.CHANNEL_ID,
             "subscribed": False
         }
 
-        req = FakeGetRequest(
+        req = FakeGETRequest(
             args=ImmutableMultiDict(
-                [('hub.topic', 'https://www.youtube.com/xml/feeds/videos.xml?channel_id=UCLozjflf3i84bu_2jLTK2rA'),
+                [('hub.topic', 'https://www.youtube.com/xml/feeds/videos.xml?channel_id={}'.format(self.CHANNEL_ID)),
                  ('hub.challenge', '17674212813144385002'), ('hub.mode', 'unsubscribe'),
                  ('hub.verify_token', CONFIG["verification_token"])])
         )
 
         handle_get(req)
 
-        test_result = get_channel(self.channel_id)
+        actual = get_channel(self.CHANNEL_ID)
         relevant_test_results = {
-            "channel_id": test_result["channel_id"],
-            "subscribed": test_result["subscribed"]
+            "channel_id": actual["channel_id"],
+            "subscribed": actual["subscribed"]
         }
 
-        self.assert_dict(relevant_test_results, expected_result)
-
-
-if __name__ == '__main__':
-    init_db()
-    unittest.main()
+        assert_dict(self, expected, relevant_test_results)

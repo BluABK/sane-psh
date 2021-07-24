@@ -52,11 +52,13 @@ def handle_get(req, callback=None):
         lease_seconds = float(req.args["hub.lease_seconds"])
         expires_on = datetime.datetime.fromtimestamp(datetime.datetime.now().timestamp() + lease_seconds)
     else:
-        log.warning("lease_seconds missing! Setting None")
+        if not mode == "unsubscribe":
+            log.error("lease_seconds missing for mode: '{}'! Setting None".format(mode))
+
         expires_on = None
 
-    log.info("New GET Request: topic: {}, challenge: {}, mode: {}, lease_seconds: {}".format(
-        topic, challenge, mode, lease_seconds))
+    log.info("New GET Request (mode: {mode}): topic: {topic}, challenge: {cha}, lease_seconds: {lease}".format(
+        topic=topic, cha=challenge, mode=mode, lease=lease_seconds))
 
     # Add to database if not exist, else update existing.
     if not get_channel(channel_id):
