@@ -10,7 +10,7 @@ from flask import make_response, request
 
 from handlers.log_handler import create_logger
 from handlers.config_handler import CONFIG
-from utils import log_all_error, check_required_args, console_log, log_request
+from utils import log_all_error, check_required_args, console_log, log_request, verify_request_hmac
 from database.models.channel import Channel
 from database.models.video import Video
 from database.operations import add_row, update_channel, update_video, del_video_by_id, get_channel, get_video
@@ -192,27 +192,25 @@ def handled_video_to_string(d):
 # @app.route('{}/notifications'.format(API_BASEROUTE), methods=['GET', 'POST'])
 def psh():
     datetime_stamp = datetime.datetime.now(timezone.utc).isoformat().replace(':', '-').replace('T', '_')
-    retv = ''
 
     log_request(request)
 
     if request.method == 'POST':
         # Verify HMAC authentication, if specified in config.
         if CONFIG["require_hmac_authentication"] is True:
-            if 'X-Hub-Signature' in request.headers:
-                signature = hmac.new(str.encode(CONFIG["hmac_secret"]), request.data, hashlib.sha1).hexdigest()
-                if "sha1={}".format(signature) != request.headers['X-Hub-Signature']:
-                    log_all_error("ERROR: HMAC Signature mismatch! ({theirs} != {ours})".format(
-                        theirs=request.headers['X-Hub-Signature'], ours=signature))
+            hmac_result = verify_request_hmac(request, 'X-Hub-Signature', CONFIG["hmac_secret"])
+            if hmac_result["code"] != 200:
+                log_all_error("HTTP {code}: {msg}".format(**hmac_result))
 
-                    return "ERROR: HMAC Signature mismatch!"
-            else:
-                log_all_error("ERROR: POST Request is missing required HMAC authentication (X-Hub-Signature) header!")
+                # Confirm receipt of request to HUB, with a HTTP 200 OK.
+                # If the signature does not match, subscribers MUST still return a 2xx success response
+                # to acknowledge receipt, but locally ignore the message as invalid.
+                make_response('OK', 200)
 
-                return "ERROR: POST Request is missing required HMAC authentication (X-Hub-Signature) header!"
+                # Return the actual error code and message back to caller.
+                return hmac_result
 
-        # xml = BeautifulSoup(request.data, features="xml")  # Doesn't standardise tag casing
-        xml = BeautifulSoup(request.data, "lxml")  # Standardises tag casing
+        xml = BeautifulSoup(request.data, "lxml")  # "lxml" Standardises tag casing, "xml" does not.
 
         log.debug("XML/Atom feed\n{}".format(xml.feed.prettify()))
         if not os.path.isdir('request_cache'):
@@ -243,5 +241,7 @@ def psh():
 
     if request.method == 'GET':
         retv = handle_get(request)
+    else:
+        retv = ''
 
     return make_response(retv, 200)

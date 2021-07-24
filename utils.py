@@ -1,10 +1,15 @@
+import hashlib
+import hmac
 import sys
 import os
 import json
 import datetime
 from datetime import timezone
 
+import requests
+
 from handlers.log_handler import create_logger
+from handlers.config_handler import CONFIG
 
 log = create_logger(__name__)
 
@@ -123,3 +128,28 @@ def log_request(request, logger=log.info):
         from_hdr="From: {}".format(req_info["headers"]["From"]) if "From" in req_info["headers"] else "",
         cnt_type="({})".format(req_info["headers"]["Content-Type"]) if "Content-Type" in req_info["headers"] else "",
         req_info=json.dumps(req_info, indent=4)))
+
+
+def verify_request_hmac(request: requests.Request, hmac_header: str, hmac_secret: str) -> dict:
+    """
+    Verifies HMAC Signature of a HTTP request.
+
+    :param request:
+    :param hmac_header:
+    :param hmac_secret:
+    :return: dict with status code and msg.
+    """
+    if hmac_header in request.headers:
+        signature = hmac.new(str.encode(hmac_secret), request.data, hashlib.sha1).hexdigest()
+        if "sha1={}".format(signature) != request.headers[hmac_header]:
+            log_all_error("ERROR: HMAC Signature mismatch! ({theirs} != {ours})".format(
+                theirs=request.headers[hmac_header], ours=signature))
+
+            return {"code": 401, "msg": "Unauthorized: HMAC Signature mismatch!"}
+        else:
+            return {"code": 200, "msg": "OK"}
+    else:
+        log_all_error("ERROR: POST Request is missing required HMAC authentication (X-Hub-Signature) header!")
+
+        return {"code": 400,
+                "msg": "Bad Request: POST Request is missing required HMAC authentication (X-Hub-Signature) header!"}
