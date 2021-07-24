@@ -1,5 +1,5 @@
 - Implement automatic renewal of expired / about-to-expire feeds (threading most likely required).
-- Implement handling of deleted videos ('at' tag).
 - Implement a poll route.
 - Implement a push to sane-instance function.
 - Implement adding/updating of title in /api/subscribe POST?
+- Implement HMAC/Verification/Auth-req for PSH API.
