@@ -52,13 +52,13 @@ class Video(Base):
     def update_last_modified(self):
         self.last_modified = datetime.now(timezone.utc)
 
-    def as_dict(self):
+    def as_dict(self, stringify_datetime=False):
         return {
             "video_id": self.video_id,
             "channel_id": self.channel_id,
             "video_title": self.video_title,
-            "published_on": self.published_on,
-            "updated_on": self.updated_on,
-            "added_on": self.added_on,
-            "last_modified": self.last_modified
+            "published_on": self.published_on if not stringify_datetime else str(self.published_on),
+            "updated_on": self.updated_on if not stringify_datetime else str(self.updated_on),
+            "added_on": self.added_on if not stringify_datetime else str(self.added_on),
+            "last_modified": self.last_modified if not stringify_datetime else str(self.last_modified)
         }

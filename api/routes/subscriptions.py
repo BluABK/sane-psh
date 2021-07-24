@@ -7,7 +7,7 @@ import datetime
 from handlers.config_handler import CONFIG
 from handlers.log_handler import create_logger
 from utils import log_request
-from database.operations import get_channels
+from database.operations import get_channels, get_videos
 
 log = create_logger(__name__)
 
@@ -120,3 +120,14 @@ def list_subscriptions(stringify_datetime=True):
     log.debug(subscriptions_list)
 
     return jsonify(subscriptions_list)
+
+
+def list_videos(stringify_datetime=True):
+    videos_list = get_videos(stringify_datetime)
+
+    log_request(request)
+
+    log.info("List videos request processed")
+    log.debug(videos_list)
+
+    return jsonify(videos_list)

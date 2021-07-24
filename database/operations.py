@@ -33,6 +33,7 @@ def wipe_table(table):
 
         session.commit()
     except SQLAlchemyError:
+        log.exception(SQLAlchemyError)
         session.rollback()
         raise
     finally:
@@ -50,6 +51,7 @@ def wipe_db():
 
         session.commit()
     except SQLAlchemyError:
+        log.exception(SQLAlchemyError)
         session.rollback()
         raise
     finally:
@@ -64,6 +66,7 @@ def add_row(db_row: Base):
         session.add(db_row)
         session.commit()
     except SQLAlchemyError:
+        log.exception(SQLAlchemyError)
         session.rollback()
         raise
     finally:
@@ -83,6 +86,7 @@ def get_channel(channel_id: str) -> dict:
         # Commit transaction (NB: makes detached instances expire)
         session.commit()
     except SQLAlchemyError:
+        log.exception(SQLAlchemyError)
         raise
     finally:
         session.close()
@@ -99,12 +103,14 @@ def get_channels(stringify_datetime: bool = False) -> dict:
         channels_dict = {}
         for channel in channel_objs:
             channels_dict[channel.channel_id] = channel.as_dict(stringify_datetime)
-        log.debug("channels")
+            channels_dict[channel.channel_id].pop("channel_id")
+        log.debug("channels:")
         log.debug(channels_dict)
 
         # Commit transaction (NB: makes detached instances expire)
         session.commit()
     except SQLAlchemyError:
+        log.exception(SQLAlchemyError)
         raise
     finally:
         session.close()
@@ -124,11 +130,36 @@ def get_video(video_id: str) -> dict:
         # Commit transaction (NB: makes detached instances expire)
         session.commit()
     except SQLAlchemyError:
+        log.exception(SQLAlchemyError)
         raise
     finally:
         session.close()
 
     return video_dict
+
+
+def get_videos(stringify_datetime: bool = False) -> dict:
+    session = db_session()
+
+    try:
+        # Get all rows in Video table.
+        video_objs: dict = session.query(Video).all()
+        videos_dict = {}
+        for video in video_objs:
+            videos_dict[video.video_id] = video.as_dict(stringify_datetime)
+            videos_dict[video.video_id].pop("video_id")
+        log.debug("videos:")
+        log.debug(videos_dict)
+
+        # Commit transaction (NB: makes detached instances expire)
+        session.commit()
+    except SQLAlchemyError:
+        log.exception(SQLAlchemyError)
+        raise
+    finally:
+        session.close()
+
+    return videos_dict
 
 
 def del_video_by_id(video_id: str):

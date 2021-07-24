@@ -2,7 +2,7 @@ from flask import Flask
 import logging
 
 from api.routes.notifications import psh
-from api.routes.subscriptions import subscribe, unsubscribe, list_subscriptions
+from api.routes.subscriptions import subscribe, unsubscribe, list_subscriptions, list_videos
 from database import init_db
 from handlers.log_handler import create_logger
 from settings import API_BASEROUTE
@@ -25,6 +25,7 @@ if __name__ == "__main__":
     app.add_url_rule('{}/subscribe'.format(API_BASEROUTE), view_func=subscribe, methods=['POST'])
     app.add_url_rule('{}/unsubscribe'.format(API_BASEROUTE), view_func=unsubscribe, methods=['POST'])
     app.add_url_rule('{}/subscriptions'.format(API_BASEROUTE), view_func=list_subscriptions, methods=['GET'])
+    app.add_url_rule('{}/videos'.format(API_BASEROUTE), view_func=list_videos, methods=['GET'])
 
     # Start web server.
     app.run(host=config["bind_host"], port=config["bind_port"], debug=config["debug_flask"])
