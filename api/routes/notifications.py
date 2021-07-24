@@ -198,17 +198,27 @@ def psh():
     if request.method == 'POST':
         # Verify HMAC authentication, if specified in config.
         if CONFIG["require_hmac_authentication"] is True:
-            hmac_result = verify_request_hmac(request, 'X-Hub-Signature', CONFIG["hmac_secret"])
-            if hmac_result["code"] != 200:
-                log_all_error("HTTP {code}: {msg}".format(**hmac_result))
+            if 'X-Hub-Signature' in request.headers:
+                hmac_result = verify_request_hmac(
+                    request.headers['X-Hub-Signature'], request.data,  CONFIG["hmac_secret"])
 
-                # Confirm receipt of request to HUB, with a HTTP 200 OK.
-                # If the signature does not match, subscribers MUST still return a 2xx success response
-                # to acknowledge receipt, but locally ignore the message as invalid.
-                make_response('OK', 200)
+                if hmac_result["code"] != 200:
+                    log_all_error("HTTP {code}: {msg}".format(**hmac_result))
+            else:
+                log_all_error("ERROR: POST Request is missing required HMAC authentication (X-Hub-Signature) header!")
 
-                # Return the actual error code and message back to caller.
-                return hmac_result
+                hmac_result = {
+                    "code": 400,
+                    "msg": "Bad Request: POST Request is missing required HMAC authentication (X-Hub-Signature) header!"
+                }
+
+            # Confirm receipt of request to HUB, with a HTTP 200 OK.
+            # If the signature does not match, subscribers MUST still return a 2xx success response
+            # to acknowledge receipt, but locally ignore the message as invalid.
+            make_response('OK', 200)
+
+            # Return the actual error code and message back to caller.
+            return hmac_result
 
         xml = BeautifulSoup(request.data, "lxml")  # "lxml" Standardises tag casing, "xml" does not.
 

@@ -130,26 +130,21 @@ def log_request(request, logger=log.info):
         req_info=json.dumps(req_info, indent=4)))
 
 
-def verify_request_hmac(request: requests.Request, hmac_header: str, hmac_secret: str) -> dict:
+def verify_request_hmac(their_signature, payload, hmac_secret: str) -> dict:
     """
     Verifies HMAC Signature of a HTTP request.
 
-    :param request:
-    :param hmac_header:
-    :param hmac_secret:
+    :param their_signature: Their computed HMAC signature.
+    :param payload: Payload to verify integrity of.
+    :param hmac_secret: Our HMAC secret.
     :return: dict with status code and msg.
     """
-    if hmac_header in request.headers:
-        signature = hmac.new(str.encode(hmac_secret), request.data, hashlib.sha1).hexdigest()
-        if "sha1={}".format(signature) != request.headers[hmac_header]:
-            log_all_error("ERROR: HMAC Signature mismatch! ({theirs} != {ours})".format(
-                theirs=request.headers[hmac_header], ours=signature))
+    signature = hmac.new(str.encode(hmac_secret), payload, hashlib.sha1).hexdigest()
 
-            return {"code": 401, "msg": "Unauthorized: HMAC Signature mismatch!"}
-        else:
-            return {"code": 200, "msg": "OK"}
+    if "sha1={}".format(signature) != their_signature:
+        log_all_error("ERROR: HMAC Signature mismatch! ({theirs} != {ours})".format(
+            theirs=their_signature, ours=signature))
+
+        return {"code": 401, "msg": "Unauthorized: HMAC Signature mismatch!"}
     else:
-        log_all_error("ERROR: POST Request is missing required HMAC authentication (X-Hub-Signature) header!")
-
-        return {"code": 400,
-                "msg": "Bad Request: POST Request is missing required HMAC authentication (X-Hub-Signature) header!"}
+        return {"code": 200, "msg": "OK"}
