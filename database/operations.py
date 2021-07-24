@@ -1,4 +1,7 @@
+import json
 from typing import Union
+
+from sqlalchemy import desc, asc
 from sqlalchemy.exc import SQLAlchemyError
 
 from database import engine, db_session, Base
@@ -138,18 +141,21 @@ def get_video(video_id: str) -> dict:
     return video_dict
 
 
-def get_videos(stringify_datetime: bool = False) -> dict:
+def get_videos(stringify_datetime: bool = False,
+               sort_by_col: str = "published_on", order_descending: bool = True) -> list:
     session = db_session()
 
     try:
+        order_func = desc if order_descending else asc
+
         # Get all rows in Video table.
-        video_objs: dict = session.query(Video).all()
-        videos_dict = {}
-        for video in video_objs:
-            videos_dict[video.video_id] = video.as_dict(stringify_datetime)
-            videos_dict[video.video_id].pop("video_id")
-        log.debug("videos:")
-        log.debug(videos_dict)
+        query = session.query(Video).order_by(order_func(sort_by_col))
+
+        videos_list = []
+        for video in query.all():
+            videos_list.append(video.as_dict(stringify_datetime))
+
+        log.debug("Videos:\n{}".format(json.dumps(videos_list, indent=4)))
 
         # Commit transaction (NB: makes detached instances expire)
         session.commit()
@@ -159,7 +165,7 @@ def get_videos(stringify_datetime: bool = False) -> dict:
     finally:
         session.close()
 
-    return videos_dict
+    return videos_list
 
 
 def del_video_by_id(video_id: str):

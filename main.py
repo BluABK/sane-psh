@@ -2,7 +2,8 @@ from flask import Flask
 import logging
 
 from api.routes.notifications import psh
-from api.routes.subscriptions import subscribe, unsubscribe, list_subscriptions, list_videos
+from api.routes.subscriptions import subscribe, unsubscribe, list_subscriptions
+from api.routes.videos import list_videos
 from database import init_db
 from handlers.log_handler import create_logger
 from settings import API_BASEROUTE
