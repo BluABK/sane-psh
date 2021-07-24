@@ -207,19 +207,6 @@ def psh():
             else:
                 log_all_error("ERROR: POST Request is missing required HMAC authentication (X-Hub-Signature) header!")
 
-                hmac_result = {
-                    "code": 400,
-                    "msg": "Bad Request: POST Request is missing required HMAC authentication (X-Hub-Signature) header!"
-                }
-
-            # Confirm receipt of request to HUB, with a HTTP 200 OK.
-            # If the signature does not match, subscribers MUST still return a 2xx success response
-            # to acknowledge receipt, but locally ignore the message as invalid.
-            make_response('OK', 200)
-
-            # Return the actual error code and message back to caller.
-            return hmac_result
-
         xml = BeautifulSoup(request.data, "lxml")  # "lxml" Standardises tag casing, "xml" does not.
 
         log.debug("XML/Atom feed\n{}".format(xml.feed.prettify()))
@@ -247,11 +234,14 @@ def psh():
             else:
                 log_all_error("ERROR: Got unexpected feed type, aborting!")
 
-                return "ERROR: Got unexpected feed type, aborting!"
+        # Confirm receipt of request to HUB, with a HTTP 200 OK.
+        # If the signature does not match, subscribers MUST still return a 2xx success response
+        # to acknowledge receipt, but locally ignore the message as invalid.
+        return make_response('OK', 200)
 
-    if request.method == 'GET':
-        retv = handle_get(request)
-    else:
-        retv = ''
+    elif request.method == 'GET':
+        # Handle GET request and obtain challenge code.
+        challenge = handle_get(request)
 
-    return make_response(retv, 200)
+        # Respond with HTTP 200 and challenge code as msg.
+        return make_response(challenge, 200)

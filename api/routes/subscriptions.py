@@ -62,7 +62,6 @@ def make_hub_subscription_request(channel_id, mode):
 def subscribe():
     log_request(request)
 
-
     if 'id' in request.args:
         channel_ids = request.args.getlist('id')[0].split(',')
         log.info("Subscribe to channel IDs: {}".format(channel_ids))
