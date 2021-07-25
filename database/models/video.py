@@ -11,7 +11,7 @@ class Video(Base):
     id = Column(Integer, primary_key=True)
     channel_id = Column(VARCHAR, ForeignKey('channel.channel_id'))
     channel = relationship("Channel", back_populates='videos')
-    video_id = Column(VARCHAR)
+    video_id = Column(VARCHAR, unique=True)
     video_title = Column(VARCHAR)
     # YouTube entry publish date.
     published_on = Column(DateTime)

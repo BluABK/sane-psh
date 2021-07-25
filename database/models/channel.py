@@ -9,7 +9,7 @@ from database import Base
 class Channel(Base):
     __tablename__ = 'channel'
     id = Column(Integer, primary_key=True)
-    channel_id = Column(VARCHAR)
+    channel_id = Column(VARCHAR, unique=True)
     # NB: Channel title can only be acquired when a video belonging to this Channel shows up,
     #     as it isn't included in the subscribe GET request that init this object.
     channel_title = Column(VARCHAR)
