@@ -16,7 +16,6 @@ def list_videos(stringify_datetime=True):
     log_request(request)
 
     video_dict_keys = Video.__table__.columns.keys()
-    log.critical(video_dict_keys)
 
     if "sort" in request.args:
         if request.args["sort"] in video_dict_keys:

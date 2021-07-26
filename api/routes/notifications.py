@@ -12,8 +12,8 @@ from handlers.log_handler import create_logger
 from handlers.config_handler import CONFIG
 from utils import log_all_error, check_required_args, console_log, log_request, verify_request_hmac
 from database.models.channel import Channel
-from database.models.video import Video
-from database.operations import add_row, update_channel, update_video, del_video_by_id, get_channel, get_video
+from database.operations import add_row, update_channel, del_video_by_id, get_channel, get_video, \
+    add_or_update_video
 from utils import datetime_ns_to_ms
 
 log = create_logger(__name__)
@@ -102,7 +102,19 @@ def handle_deleted_entry(xml, callback=None):
 
 
 def handle_video(xml, callback=None):
+    """
+    Handle Video XML data payload.
+
+    Also adds key "kind" with value of "new" or "update",
+    as some published videos aren't really new.
+    :param xml:
+    :param callback:
+    :return:
+    """
+    # DB sometimes isn't written fast enough for the above check to come true.
+    # use a global list for reference, if configured to.
     global VIDEO_ID_HISTORY
+
     result = {
         "links": [{'href': lnk.get('href'), 'rel': lnk.get('rel')} for lnk in xml.feed.find_all('link')],
         "title": xml.feed.title.string,
@@ -125,51 +137,32 @@ def handle_video(xml, callback=None):
     published_on = datetime.datetime.strptime(entry["published"], FEED_PUBLISHED_FMT)
     updated_on = datetime.datetime.strptime(datetime_ns_to_ms(entry["updated"]), FEED_UPDATED_FMT)
 
-    # Add to database if not exist, else update existing.
-    if not get_video(entry["video_id"]):
-        # If there is more than two minutes time difference between publish and update,
-        # the video is probably not freshly posted; treat it as an update.
-        if updated_on.timestamp() - published_on.timestamp() > 120:
-            entry["kind"] = "update"
-        else:
-            # Indicate video as new as it didn't exist in DB and update is less than two minutes older.
-            entry["kind"] = "new"
+    # # If there is more than two minutes time difference between publish and update,
+    # # the video is probably not freshly posted; treat it as an update.
+    # if updated_on.timestamp() - published_on.timestamp() > 120:
+    # FIXME: Keep? ^
 
-            # DB sometimes isn't written fast enough for the above check to come true.
-            # use a global list for reference, if configured to.
-            if CONFIG["increase_kind_precision"] is True:
-                if entry["video_id"] in VIDEO_ID_HISTORY:
-                    # Video exists in the global video ID list, so it is an update.
-                    entry["kind"] = "update"
-
-            else:
-                # Not configured for increased precision, so assume new.
-                entry["kind"] = "new"
-
-        # Write video to DB.
-        add_row(
-            Video(video_id=entry["video_id"],
-                  channel_id=entry["channel_id"],
-                  video_title=entry["video_title"],
-                  published_on=published_on,
-                  updated_on=updated_on
-                  )
-        )
-
-        # Update global list of video IDs, if configured to.
-        if CONFIG["increase_kind_precision"] is True:
-            if entry["video_id"] not in VIDEO_ID_HISTORY:
-                VIDEO_ID_HISTORY.append(entry["video_id"])
-
-        if get_channel(entry["channel_id"]):
-            # Update channel title (only included with a Video Atom feed).
-            update_channel(entry["channel_id"], channel_title=entry["channel_title"])
-
-    # Update existing.
-    else:
+    # If video is already in DB, it is an update else it's a new video.
+    if get_video(entry["video_id"]) or entry["video_id"] in VIDEO_ID_HISTORY:
         entry["kind"] = "update"
+    else:
+        entry["kind"] = "new"
 
-        update_video(entry['video_id'], video_title=entry["video_title"])
+    # Update global list of video IDs.
+    if entry["video_id"] not in VIDEO_ID_HISTORY:
+        VIDEO_ID_HISTORY.append(entry["video_id"])
+
+    # Add Video to DB or update existing entry.
+    add_or_update_video(video_id=entry["video_id"],
+                        channel_id=entry["channel_id"],
+                        video_title=entry["video_title"],
+                        published_on=published_on,
+                        updated_on=updated_on
+                        )
+
+    # Retroactively update channel title (only included with a Video Atom feed).
+    if get_channel(entry["channel_id"]):
+        update_channel(entry["channel_id"], channel_title=entry["channel_title"])
 
     if callback is not None:
         callback(result)
@@ -189,7 +182,6 @@ def handled_video_to_string(d):
         video_title=video_title, url=url)
 
 
-# @app.route('{}/notifications'.format(API_BASEROUTE), methods=['GET', 'POST'])
 def psh():
     datetime_stamp = datetime.datetime.now(timezone.utc).isoformat().replace(':', '-').replace('T', '_')
 
